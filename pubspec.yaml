@@ -8,3 +8,9 @@ workspace:
   - src/native_toolchain_zeekr
   - src/zstd
   - src/zstd/example
+
+hooks:
+  user_defines:
+    zstd:
+      # url: 'git@github.com:facebook/zstd.git'
+      url: 'https://gitee.com/yanshouwang/zstd.git'
