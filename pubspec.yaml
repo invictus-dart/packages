@@ -1,0 +1,10 @@
+name: _
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+
+workspace:
+  - src/native_toolchain_zeekr
+  - src/zstd
+  - src/zstd/example
