@@ -1,0 +1,44 @@
+name: mars_logging
+description: "Mars integration for logging package."
+version: 0.0.1
+# repository: https://github.com/invictus-dart/packages/tree/main/src/mars_logging/mars_logging
+topics:
+  - mars
+  - logging
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  mars_logging_api: ^0.0.1
+  logging: ^1.3.0
+  path: ^1.9.1
+  cross_file: ^0.3.4+2
+  zstd: ^0.0.1
+  pointycastle: ^4.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  pigeon: ^29.0.11
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: dev.zeekr.mars_logging
+        pluginClass: MarsLoggingPlugin
+        dartPluginClass: MarsLoggingPlugin
+      ios:
+        sharedDarwinSource: true
+        pluginClass: MarsLoggingPlugin
+        dartPluginClass: MarsLoggingPlugin
+      macos:
+        sharedDarwinSource: true
+        pluginClass: MarsLoggingPlugin
+        dartPluginClass: MarsLoggingPlugin

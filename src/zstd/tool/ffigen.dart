@@ -13,7 +13,7 @@ void main(List<String> args) async {
       ],
     ),
     output: Output(
-      dart: DartOutput(path: rootUri.resolve('lib/src/zstd.ffi.dart')),
+      dart: DartOutput(path: rootUri.resolve('lib/src/zstd.g.dart')),
     ),
     visitors: [
       Visitor(

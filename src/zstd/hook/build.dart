@@ -3,7 +3,6 @@ import 'package:native_toolchain_zeekr/native_toolchain_zeekr.dart';
 
 void main(List<String> args) async {
   await build(args, (input, output) async {
-    final name = input.packageName;
     final srcDir = input.outputDirectoryShared.resolve('src/');
     final dstDir = input.outputDirectory.resolve('dst/');
     final outDir = input.outputDirectory.resolve('out/');
@@ -23,8 +22,8 @@ void main(List<String> args) async {
         'ZSTD_BUILD_STATIC': 'OFF',
         'ZSTD_BUILD_SHARED': 'ON',
       },
-      name: name,
-      assetName: 'src/$name.ffi.dart',
+      name: input.packageName,
+      assetName: 'src/zstd.g.dart',
     ).run(input: input, output: output);
   });
 }

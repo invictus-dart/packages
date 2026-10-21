@@ -234,7 +234,7 @@ final class _ZstdDecompressFilter extends _ZstdFilter {
   }
 }
 
-extension _PointerX<T extends ffi.NativeType> on ffi.Pointer<T> {
+extension _PointerExt<T extends ffi.NativeType> on ffi.Pointer<T> {
   bool get isNull => this == ffi.nullptr;
   bool get isNotNull => !isNull;
 
@@ -242,11 +242,11 @@ extension _PointerX<T extends ffi.NativeType> on ffi.Pointer<T> {
       isNull ? throw ArgumentError.notNull(name) : this;
 }
 
-extension on ffi.Pointer<ffi.Char> {
+extension _CharPointerExt on ffi.Pointer<ffi.Char> {
   String toDartString() => cast<ffi.Utf8>().toDartString();
 }
 
-extension on int {
+extension _IntExt on int {
   int checkError() {
     final isError = ffi.ZSTD_isError(this);
     if (isError == 0) return this;

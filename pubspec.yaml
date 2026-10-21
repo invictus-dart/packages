@@ -8,6 +8,9 @@ workspace:
   - src/native_toolchain_zeekr
   - src/zstd
   - src/zstd/example
+  - src/mars_logging/mars_logging_api
+  - src/mars_logging/mars_logging
+  - src/mars_logging/mars_logging/example
 
 hooks:
   user_defines:

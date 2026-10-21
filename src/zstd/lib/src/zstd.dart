@@ -5,9 +5,9 @@ import 'dart:ffi' as ffi;
 
 import 'package:ffi/ffi.dart' as ffi;
 
-import 'zstd.ffi.dart' as ffi;
+import 'zstd.g.dart' as ffi;
 
-part 'zstd.impl.dart';
+part 'zstd_impl.dart';
 
 /// Exposes zstd options for input parameters.
 ///
