@@ -16,7 +16,7 @@ A new Flutter plugin project.
   s.source_files = 'mars_logging/Sources/mars_logging/**/*'
   s.frameworks = 'SystemConfiguration', 'CoreTelephony', 'Foundation'
   s.vendored_xcframeworks = 'Frameworks/mars.xcframework'
-  s.libraries = 'crypto', 'resolv.9', 'z'
+  s.libraries = 'resolv.9', 'z'
   s.swift_version = '5.0'
 
   # If your plugin requires a privacy manifest, for example if it uses any
