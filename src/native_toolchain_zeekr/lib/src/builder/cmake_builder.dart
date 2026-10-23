@@ -11,12 +11,9 @@ import '../utils/run_process.dart';
 import '../utils/user_defines.dart';
 import 'build_mode.dart';
 import 'compiler_resolver.dart';
-import 'linkmode.dart';
 import 'logger.dart';
 
 final class CMakeBuilder implements Builder {
-  final String name;
-  final String assetName;
   final Uri srcDir;
   final String? subDir;
   final Uri dstDir;
@@ -25,8 +22,6 @@ final class CMakeBuilder implements Builder {
   final BuildMode buildMode;
 
   CMakeBuilder({
-    required this.name,
-    required this.assetName,
     required this.srcDir,
     this.subDir,
     required this.dstDir,
@@ -50,7 +45,7 @@ final class CMakeBuilder implements Builder {
     if (!input.config.buildCodeAssets) {
       logger.info(
         'config.buildAssetTypes did not contain CodeAssets, '
-        'skipping CodeAsset $assetName build.',
+        'skipping CodeAsset ${input.packageName} build.',
       );
       return;
     }
@@ -68,7 +63,6 @@ final class CMakeBuilder implements Builder {
       arguments: [
         '-S${subDir == null ? srcDir.toFilePath() : srcDir.resolve(subDir).toFilePath()}',
         '-B${dstDir.toFilePath()}',
-        ..._getOsOptions(codeConfig: input.config.code),
         '-DCMAKE_BUILD_TYPE=$buildMode',
         // '-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON',
         ...await _getOsVariables(
@@ -109,25 +103,7 @@ final class CMakeBuilder implements Builder {
       processManager: processManager,
       throwOnUnexpectedExitCode: true,
     );
-
-    final linkMode = getLinkMode(input.config.code.linkModePreference);
-    final libPath = input.config.code.targetOS.libraryDirectoryPath(linkMode);
-    final libName = input.config.code.targetOS.libraryFileName(name, linkMode);
-    final libAsset = CodeAsset(
-      package: input.packageName,
-      name: assetName,
-      linkMode: linkMode,
-      file: outDir.resolve('$libPath/$libName'),
-    );
-    output.assets.code.add(libAsset);
   }
-
-  List<String> _getOsOptions({required CodeConfig codeConfig}) =>
-      switch (codeConfig.targetOS) {
-        .android => ['-GNinja'],
-        .iOS => ['-GXcode'],
-        _ => [],
-      };
 
   // https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html#cross-compiling
   // https://developer.android.com/studio/projects/configure-cmake?hl=zh-cn#call-cmake-cli
@@ -211,17 +187,6 @@ final class CMakeBuilder implements Builder {
       '-DCMAKE_CXX_COMPILER=${compiler.uri.toCxxCompilerPath()}',
     ];
   }
-}
-
-extension on OS {
-  String libraryDirectoryPath(LinkMode linkMode) => switch (this) {
-    .android => 'lib',
-    .iOS => 'lib',
-    .macOS => 'lib',
-    .windows => linkMode is DynamicLoadingBundled ? 'bin' : 'lib',
-    .linux => 'lib',
-    _ => throw UnsupportedError('$this is not supported'),
-  };
 }
 
 extension on Architecture {
