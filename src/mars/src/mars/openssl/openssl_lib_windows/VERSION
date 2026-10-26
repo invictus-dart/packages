@@ -1,0 +1,24 @@
+OpenSSL 3.5.9 (LTS)
+
+Prebuilt static libs from ConanCenter `openssl/3.5.9` (recipe rev
+e9977d17028841f6971240542d1f7b11), MSVC 194 / Release / static /
+compiler.runtime=dynamic:
+
+- arm64 (armv8): package 081a42677cf02160f44f9051851d2252bb19d85e
+  (package rev 6a33738db16cdb5b6391f22de3b7845a)
+- x64 (x86_64): package 28abdbfc5f7554635c526cc38d233f2beb62ab28
+  (package rev f42d0e22c45c5444df070ea85608034b)
+
+Version policy: OpenSSL 3.5 is the current LTS release (supported until
+2030-04-08). OpenSSL 3.6 is NOT an LTS release (support ends 2026-11-01)
+and must not be used.
+
+x86 (ia32) is NOT included: ConanCenter ships no ia32 prebuilt for
+3.5.9; building for x86 requires compiling OpenSSL 3.5.9 from source.
+
+Headers: identical across archs except `configuration.h` (per-arch);
+the vendored tree uses a dispatcher (configuration.h) selecting
+configuration_windows-arm64.h / configuration_windows-x86_64.h.
+
+Mars uses only rand.h / md5.h / crypto.h (RAND_bytes, MD5), which are
+stable across 3.x; the build is verified end-to-end (dart test).

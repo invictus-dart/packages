@@ -1,108 +1,155 @@
-import 'dart:async';
-import 'dart:isolate';
+// Dart API for the Mars SDK (Tencent/Mars) FFI bridge.
+//
+// Exposes the XLog logging functionality of Mars through the C bridge in
+// `src/mars.h` (bindings in `mars_bindings_generated.dart`).
+
+import 'dart:ffi';
+
+import 'package:ffi/ffi.dart';
 
 import 'mars_bindings_generated.dart' as bindings;
 
-/// A very short-lived native function.
-///
-/// For very short-lived functions, it is fine to call them on the main isolate.
-/// They will block the Dart execution while running the native function, so
-/// only do this for native functions which are guaranteed to be short-lived.
-int sum(int a, int b) => bindings.sum(a, b);
+/// Log levels, mirrors `mars::TLogLevel`.
+enum MarsLogLevel {
+  all(0),
+  debug(1),
+  info(2),
+  warn(3),
+  error(4),
+  fatal(5),
+  none(6);
 
-/// A longer lived native function, which occupies the thread calling it.
-///
-/// Do not call these kind of native functions in the main isolate. They will
-/// block Dart execution. This will cause dropped frames in Flutter applications.
-/// Instead, call these native functions on a separate isolate.
-///
-/// Modify this to suit your own use case. Example use cases:
-///
-/// 1. Reuse a single isolate for various different kinds of requests.
-/// 2. Use multiple helper isolates for parallel execution.
-Future<int> sumAsync(int a, int b) async {
-  final SendPort helperIsolateSendPort = await _helperIsolateSendPort;
-  final int requestId = _nextSumRequestId++;
-  final _SumRequest request = _SumRequest(requestId, a, b);
-  final Completer<int> completer = Completer<int>();
-  _sumRequests[requestId] = completer;
-  helperIsolateSendPort.send(request);
-  return completer.future;
+  final int value;
+
+  const MarsLogLevel(this.value);
 }
 
-/// A request to compute `sum`.
-///
-/// Typically sent from one isolate to another.
-class _SumRequest {
-  final int id;
-  final int a;
-  final int b;
+/// Appender mode, mirrors `mars::xlog::TAppenderMode`.
+enum MarsAppenderMode {
+  async(0),
+  sync(1);
 
-  const _SumRequest(this.id, this.a, this.b);
+  final int value;
+
+  const MarsAppenderMode(this.value);
 }
 
-/// A response with the result of `sum`.
-///
-/// Typically sent from one isolate to another.
-class _SumResponse {
-  final int id;
-  final int result;
+/// Compress mode, mirrors `mars::xlog::TCompressMode`.
+enum MarsCompressMode {
+  zlib(0),
+  zstd(1);
 
-  const _SumResponse(this.id, this.result);
+  final int value;
+
+  const MarsCompressMode(this.value);
 }
 
-/// Counter to identify [_SumRequest]s and [_SumResponse]s.
-int _nextSumRequestId = 0;
+/// Configuration for [xlogOpen], mirrors `mars::xlog::XLogConfig`.
+class XLogConfig {
+  final MarsAppenderMode mode;
+  final String logDir;
+  final String namePrefix;
+  final String pubKey;
+  final MarsCompressMode compressMode;
+  final int compressLevel;
+  final String cacheDir;
+  final int cacheDays;
 
-/// Mapping from [_SumRequest] `id`s to the completers corresponding to the correct future of the pending request.
-final Map<int, Completer<int>> _sumRequests = <int, Completer<int>>{};
+  const XLogConfig({
+    this.mode = MarsAppenderMode.async,
+    required this.logDir,
+    required this.namePrefix,
+    this.pubKey = '',
+    this.compressMode = MarsCompressMode.zlib,
+    this.compressLevel = 6,
+    this.cacheDir = '',
+    this.cacheDays = 0,
+  });
+}
 
-/// The SendPort belonging to the helper isolate.
-Future<SendPort> _helperIsolateSendPort = () async {
-  // The helper isolate is going to send us back a SendPort, which we want to
-  // wait for.
-  final Completer<SendPort> completer = Completer<SendPort>();
+/// Version of the compiled Mars SDK (MARS_REVISION).
+String get marsVersion {
+  final pointer = bindings.mars_version();
+  return pointer == nullptr ? '' : pointer.cast<Utf8>().toDartString();
+}
 
-  // Receive port on the main isolate to receive messages from the helper.
-  // We receive two types of messages:
-  // 1. A port to send messages on.
-  // 2. Responses to requests we sent.
-  final ReceivePort receivePort = ReceivePort()
-    ..listen((dynamic data) {
-      if (data is SendPort) {
-        // The helper isolate sent us the port on which we can sent it requests.
-        completer.complete(data);
-        return;
-      }
-      if (data is _SumResponse) {
-        // The helper isolate sent us a response to a request we sent.
-        final Completer<int> completer = _sumRequests[data.id]!;
-        _sumRequests.remove(data.id);
-        completer.complete(data.result);
-        return;
-      }
-      throw UnsupportedError('Unsupported message type: ${data.runtimeType}');
-    });
+/// Open the xlog appender. See [XLogConfig].
+void xlogOpen(XLogConfig config) {
+  final logDir = config.logDir.toNativeUtf8().cast<Char>();
+  final namePrefix = config.namePrefix.toNativeUtf8().cast<Char>();
+  final pubKey = config.pubKey.toNativeUtf8().cast<Char>();
+  final cacheDir = config.cacheDir.toNativeUtf8().cast<Char>();
+  try {
+    bindings.mars_xlog_appender_open(
+      config.mode.value,
+      logDir,
+      namePrefix,
+      pubKey,
+      config.compressMode.value,
+      config.compressLevel,
+      cacheDir,
+      config.cacheDays,
+    );
+  } finally {
+    malloc.free(logDir);
+    malloc.free(namePrefix);
+    malloc.free(pubKey);
+    malloc.free(cacheDir);
+  }
+}
 
-  // Start the helper isolate.
-  await Isolate.spawn((SendPort sendPort) async {
-    final ReceivePort helperReceivePort = ReceivePort()
-      ..listen((dynamic data) {
-        // On the helper isolate listen to requests and respond to them.
-        if (data is _SumRequest) {
-          final int result = bindings.sum_long_running(data.a, data.b);
-          final _SumResponse response = _SumResponse(data.id, result);
-          sendPort.send(response);
-          return;
-        }
-        throw UnsupportedError('Unsupported message type: ${data.runtimeType}');
-      });
+/// Close the xlog appender.
+void xlogClose() => bindings.mars_xlog_appender_close();
 
-    // Send the port to the main isolate on which we can receive requests.
-    sendPort.send(helperReceivePort.sendPort);
-  }, receivePort.sendPort);
+/// Flush buffered logs to disk (async).
+void xlogFlush() => bindings.mars_xlog_flush();
 
-  // Wait until the helper isolate has sent us back the SendPort on which we
-  // can start sending requests.
-  return completer.future;
-}();
+/// Flush buffered logs to disk and wait for completion.
+void xlogFlushSync() => bindings.mars_xlog_flush_sync();
+
+/// Enable/disable printing logs to the console.
+void xlogSetConsoleLog({bool open = true}) =>
+    bindings.mars_xlog_set_console_log(open ? 1 : 0);
+
+/// Split log files when a single file exceeds [maxByteSize] (0 = no split).
+void xlogSetMaxFileSize(int maxByteSize) =>
+    bindings.mars_xlog_set_max_file_size(maxByteSize);
+
+/// Max alive duration of a single log file in seconds.
+void xlogSetMaxAliveDuration(int maxTimeSeconds) =>
+    bindings.mars_xlog_set_max_alive_duration(maxTimeSeconds);
+
+/// Write a log message.
+///
+/// [tag] and [filename] may be null.
+void xlogWrite(MarsLogLevel level, String? tag, String? filename, int line,
+    String content) {
+  final tagPtr = tag?.toNativeUtf8().cast<Char>() ?? nullptr;
+  final filenamePtr = filename?.toNativeUtf8().cast<Char>() ?? nullptr;
+  final contentPtr = content.toNativeUtf8().cast<Char>();
+  try {
+    bindings.mars_xlog_write(
+      level.value,
+      tagPtr,
+      filenamePtr,
+      line,
+      contentPtr,
+    );
+  } finally {
+    if (tagPtr != nullptr) malloc.free(tagPtr);
+    if (filenamePtr != nullptr) malloc.free(filenamePtr);
+    malloc.free(contentPtr);
+  }
+}
+
+/// Set the global log level filter.
+void xlogSetLevel(MarsLogLevel level) =>
+    bindings.mars_xlog_set_level(level.value);
+
+/// Get the current global log level.
+MarsLogLevel xlogGetLevel() =>
+    MarsLogLevel.values[bindings.mars_xlog_get_level()];
+
+/// Whether messages of the given [level] will be logged.
+bool xlogIsEnabled(MarsLogLevel level) =>
+    bindings.mars_xlog_is_enabled(level.value) != 0;

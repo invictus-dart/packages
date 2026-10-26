@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 import 'package:mars/mars.dart' as mars;
 
@@ -15,14 +14,12 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late int sumResult;
-  late Future<int> sumAsyncResult;
+  late String marsVersion;
 
   @override
   void initState() {
     super.initState();
-    sumResult = mars.sum(1, 2);
-    sumAsyncResult = mars.sumAsync(3, 4);
+    marsVersion = mars.marsVersion;
   }
 
   @override
@@ -31,7 +28,7 @@ class _MyAppState extends State<MyApp> {
     const spacerSmall = SizedBox(height: 10);
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(title: const Text('Native Packages')),
+        appBar: AppBar(title: const Text('Mars (Native Assets)')),
         body: SingleChildScrollView(
           child: Container(
             padding: const .all(10),
@@ -45,23 +42,9 @@ class _MyAppState extends State<MyApp> {
                 ),
                 spacerSmall,
                 Text(
-                  'sum(1, 2) = $sumResult',
+                  'mars version = $marsVersion',
                   style: textStyle,
                   textAlign: .center,
-                ),
-                spacerSmall,
-                FutureBuilder<int>(
-                  future: sumAsyncResult,
-                  builder: (BuildContext context, AsyncSnapshot<int> value) {
-                    final displayValue = (value.hasData)
-                        ? value.data
-                        : 'loading';
-                    return Text(
-                      'await sumAsync(3, 4) = $displayValue',
-                      style: textStyle,
-                      textAlign: .center,
-                    );
-                  },
                 ),
               ],
             ),

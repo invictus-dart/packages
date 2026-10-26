@@ -31,7 +31,8 @@ Bundling is done by Flutter based on the output from `build.dart`.
 To use the native code, bindings in Dart are needed.
 To avoid writing these by hand, they are generated from the header file
 (`src/mars.h`) by `package:ffigen`.
-Regenerate the bindings by running `dart run ffigen --config ffigen.yaml`.
+Regenerate the bindings by running `dart run tool/ffigen.dart`
+(the ffigen configuration is embedded in that script).
 
 ## Invoking native code
 
