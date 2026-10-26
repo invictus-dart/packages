@@ -4,100 +4,75 @@
 // ignore_for_file: type=lint, unused_import, unused_element, deprecated_member_use_from_same_package
 import 'dart:ffi' as ffi;
 
-/// Close the xlog appender.
 @ffi.Native<ffi.Void Function()>()
 external void mars_xlog_appender_close();
 
-/// Flush buffered logs to disk (async).
 @ffi.Native<ffi.Void Function()>()
 external void mars_xlog_appender_flush();
 
-/// Flush buffered logs to disk and wait for completion.
 @ffi.Native<ffi.Void Function()>()
 external void mars_xlog_appender_flush_sync();
 
-/// Open the xlog appender. Mirrors mars::xlog::appender_open(XLogConfig).
-///
-/// All string parameters are UTF-8, may be NULL for empty.
-/// mode:           MarsAppenderMode
-/// log_dir:        directory for log files
-/// name_prefix:    prefix of log file names
-/// pub_key:        public key for log encryption (empty = no encryption)
-/// compress_mode:  MarsCompressMode
-/// compress_level: zlib/zstd compression level
-/// cache_dir:      directory for cache files (may be same as log_dir)
-/// cache_days:     days to keep cache files
 @ffi.Native<
   ffi.Void Function(
     ffi.Int,
     ffi.Pointer<ffi.Char>,
     ffi.Pointer<ffi.Char>,
-    ffi.Pointer<ffi.Char>,
-    ffi.Int,
     ffi.Int,
     ffi.Pointer<ffi.Char>,
     ffi.Int,
+    ffi.Int,
+    ffi.Pointer<ffi.Char>,
   )
 >()
 external void mars_xlog_appender_open(
   int mode,
-  ffi.Pointer<ffi.Char> log_dir,
-  ffi.Pointer<ffi.Char> name_prefix,
-  ffi.Pointer<ffi.Char> pub_key,
-  int compress_mode,
-  int compress_level,
+  ffi.Pointer<ffi.Char> logs_dir,
   ffi.Pointer<ffi.Char> cache_dir,
   int cache_days,
+  ffi.Pointer<ffi.Char> name_prefix,
+  int compress_mode,
+  int compress_level,
+  ffi.Pointer<ffi.Char> pub_key,
 );
 
-/// Enable/disable printing logs to console.
 @ffi.Native<ffi.Void Function(ffi.Int)>()
 external void mars_xlog_appender_set_console_log(int is_open);
 
-/// Max alive duration of a single log file in seconds.
 @ffi.Native<ffi.Void Function(ffi.Int64)>()
 external void mars_xlog_appender_set_max_alive_duration(int max_time_seconds);
 
-/// Split log files when a single file exceeds max_byte_size (0 = no split).
 @ffi.Native<ffi.Void Function(ffi.Uint64)>()
 external void mars_xlog_appender_set_max_file_size(int max_byte_size);
 
-/// Whether messages of the given level will be logged.
 @ffi.Native<ffi.Int Function(ffi.Int)>()
 external int mars_xlog_xlogger_is_enabled_for(int level);
 
-/// Get the current global log level.
 @ffi.Native<ffi.Int Function()>()
 external int mars_xlog_xlogger_level();
 
-/// Set the global log level filter.
 @ffi.Native<ffi.Void Function(ffi.Int)>()
 external void mars_xlog_xlogger_set_level(int level);
 
-/// Write a log message. Mirrors xlogger_Write with a filled XLoggerInfo.
-/// level:    MarsLogLevel
-/// tag:      log tag, may be NULL
-/// filename: source file name, may be NULL
-/// line:     source line number
-/// content:  log content (not NULL)
 @ffi.Native<
   ffi.Void Function(
     ffi.Int,
     ffi.Pointer<ffi.Char>,
     ffi.Pointer<ffi.Char>,
     ffi.Int,
+    ffi.Pointer<ffi.Char>,
     ffi.Pointer<ffi.Char>,
   )
 >()
 external void mars_xlog_xlogger_write(
   int level,
   ffi.Pointer<ffi.Char> tag,
-  ffi.Pointer<ffi.Char> filename,
+  ffi.Pointer<ffi.Char> file_name,
   int line,
-  ffi.Pointer<ffi.Char> content,
+  ffi.Pointer<ffi.Char> func_name,
+  ffi.Pointer<ffi.Char> message,
 );
 
-/// Appender mode, mirrors mars::xlog::TAppenderMode.
 enum MarsAppenderMode {
   kMarsAppenderAsync(0),
   kMarsAppenderSync(1);
@@ -112,7 +87,6 @@ enum MarsAppenderMode {
   };
 }
 
-/// Compress mode, mirrors mars::xlog::TCompressMode.
 enum MarsCompressMode {
   kMarsCompressZlib(0),
   kMarsCompressZstd(1);
@@ -127,7 +101,6 @@ enum MarsCompressMode {
   };
 }
 
-/// Log levels, mirrors mars::TLogLevel (mars/comm/xlogger/xloggerbase.h).
 enum MarsLogLevel {
   kMarsLogLevelAll(0),
   kMarsLogLevelDebug(1),

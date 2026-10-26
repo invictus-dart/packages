@@ -5,26 +5,23 @@ import 'package:test/test.dart';
 
 void main() {
   test('xlog open/write/flush/close writes a log file', () {
-    final logDir = Directory.systemTemp.createTempSync('mars_test_log_');
-    addTearDown(() => logDir.deleteSync(recursive: true));
+    final logsDir = Directory.systemTemp.createTempSync('mars_test_log_');
+    addTearDown(() => logsDir.deleteSync(recursive: true));
 
-    xlogSetLevel(MarsLogLevel.all);
-    xlogOpen(XLogConfig(
-      mode: MarsAppenderMode.sync,
-      logDir: logDir.path,
+    XLog.open(
+      logsDir: logsDir.path,
+      cacheDir: logsDir.path,
       namePrefix: 'mars_test',
-      compressMode: MarsCompressMode.zlib,
-    ));
-    xlogWrite(MarsLogLevel.info, 'mars_test', 'mars_test.dart', 1,
-        'hello mars from dart');
-    xlogFlushSync();
-    xlogClose();
+    );
+    XLog.info('mars_test', 'hello mars from dart');
+    XLog.flush(true);
+    XLog.close();
 
-    final logFiles = logDir
+    final logs = logsDir
         .listSync()
         .whereType<File>()
-        .where((f) => f.path.contains('mars_test'))
+        .where((file) => file.path.contains('mars_test'))
         .toList();
-    expect(logFiles, isNotEmpty, reason: 'expected xlog files in $logDir');
+    expect(logs, isNotEmpty, reason: 'expected xlog files in $logsDir');
   });
 }

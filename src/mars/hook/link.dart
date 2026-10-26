@@ -12,10 +12,6 @@ import 'package:native_toolchain_c/native_toolchain_c.dart';
 void main(List<String> args) async {
   hierarchicalLoggingEnabled = true;
   await link(args, (input, output) async {
-    final logger = Logger('mars-link')
-      ..level = Level.ALL
-      ..onRecord.listen((record) => stdout.writeln(record.message));
-
     final packageRoot = input.packageRoot.toFilePath();
     final marsRoot = '$packageRoot/src/mars';
     final codeConfig = input.config.code;
@@ -28,8 +24,12 @@ void main(List<String> args) async {
 
     // Resolve OpenSSL library directory from the vendored layout.
     final opensslIncludeDir = '$marsRoot/openssl/include';
-    final opensslLibDir = _opensslLibDir(marsRoot, targetOS, targetArch,
-        iosSdk: iosSdk);
+    final opensslLibDir = _opensslLibDir(
+      marsRoot,
+      targetOS,
+      targetArch,
+      iosSdk: iosSdk,
+    );
     if (opensslLibDir == null || !Directory(opensslLibDir).existsSync()) {
       throw UnsupportedError(
         'OpenSSL libraries not found for $targetOS/${targetArch.name}. '
@@ -88,7 +88,7 @@ void main(List<String> args) async {
 
     final linker = CLinker.library(
       name: 'mars',
-      assetName: 'mars_bindings_generated.dart',
+      assetName: 'src/mars.g.dart',
       libraries: [...opensslLibs, ...systemLibraries],
       libraryDirectories: [opensslLibDir],
       flags: linkFlags,
@@ -99,7 +99,6 @@ void main(List<String> args) async {
       output: output,
       sources: sources,
       linkModePreference: LinkModePreference.dynamic,
-      logger: logger,
     );
   });
 }
@@ -122,9 +121,10 @@ String? _opensslLibDir(
     (OS.android, Architecture.x64) => '$base/x86_64',
     // iOS: arm64 serves both device and Apple Silicon simulator, but with
     // different OpenSSL slices; x64 is the Intel simulator slice.
-    (OS.iOS, Architecture.arm64) => iosSdk == IOSSdk.iPhoneSimulator
-        ? '$base/simulator_arm64'
-        : '$base/arm64',
+    (OS.iOS, Architecture.arm64) =>
+      iosSdk == IOSSdk.iPhoneSimulator
+          ? '$base/simulator_arm64'
+          : '$base/arm64',
     (OS.iOS, Architecture.x64) => '$base/x64',
     (OS.macOS, Architecture.arm64) => '$base/arm64',
     (OS.macOS, Architecture.x64) => '$base/x64',

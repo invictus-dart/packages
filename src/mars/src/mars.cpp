@@ -15,43 +15,31 @@
 
 extern "C"
 {
-  void mars_xlog_appender_open(int mode, const char *log_dir, const char *name_prefix, const char *pub_key, int compress_mode, int compress_level, const char *cache_dir, int cache_days)
+  void mars_xlog_appender_open(int mode, const char *logs_dir, const char *cache_dir, int cache_days, const char *name_prefix, int compress_mode, int compress_level, const char *pub_key)
   {
     mars::xlog::XLogConfig config;
     config.mode_ = static_cast<mars::xlog::TAppenderMode>(mode);
-    if (log_dir != NULL)
-    {
-      config.logdir_ = log_dir;
-    }
-    if (name_prefix != NULL)
-    {
-      config.nameprefix_ = name_prefix;
-    }
-    if (pub_key != NULL)
-    {
-      config.pub_key_ = pub_key;
-    }
+    config.logdir_ = logs_dir;
+    config.cachedir_ = cache_dir;
+    config.cache_days_ = cache_days;
+    config.nameprefix_ = name_prefix;
     config.compress_mode_ = static_cast<mars::xlog::TCompressMode>(compress_mode);
     config.compress_level_ = compress_level;
-    if (cache_dir != NULL)
-    {
-      config.cachedir_ = cache_dir;
-    }
-    config.cache_days_ = cache_days;
+    config.pub_key_ = pub_key;
     mars::xlog::appender_open(config);
   }
 
-  void mars_xlog_appender_close(void)
+  void mars_xlog_appender_close()
   {
     mars::xlog::appender_close();
   }
 
-  void mars_xlog_appender_flush(void)
+  void mars_xlog_appender_flush()
   {
     mars::xlog::appender_flush();
   }
 
-  void mars_xlog_appender_flush_sync(void)
+  void mars_xlog_appender_flush_sync()
   {
     mars::xlog::appender_flush_sync();
   }
@@ -71,7 +59,7 @@ extern "C"
     mars::xlog::appender_set_max_alive_duration(static_cast<long>(max_time_seconds));
   }
 
-  int mars_xlog_xlogger_level(void)
+  int mars_xlog_xlogger_level()
   {
     return static_cast<int>(xlogger_Level());
   }
@@ -86,19 +74,19 @@ extern "C"
     return xlogger_IsEnabledFor(static_cast<TLogLevel>(level));
   }
 
-  void mars_xlog_xlogger_write(int level, const char *tag, const char *filename, int line, const char *content)
+  void mars_xlog_xlogger_write(int level, const char *tag, const char *file_name, int line, const char *func_name, const char *message)
   {
     XLoggerInfo info = XLOGGER_INFO_INITIALIZER;
     info.level = static_cast<TLogLevel>(level);
     info.tag = tag;
-    info.filename = filename;
-    info.func_name = "";
+    info.filename = file_name;
     info.line = line;
+    info.func_name = func_name;
     info.timeval = get_timeval();
     info.pid = xlogger_pid();
     info.tid = xlogger_tid();
     info.maintid = xlogger_maintid();
     info.traceLog = 0;
-    xlogger_Write(&info, content != NULL ? content : "");
+    xlogger_Write(&info, message);
   }
 } // extern "C"

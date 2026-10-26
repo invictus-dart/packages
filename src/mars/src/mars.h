@@ -54,23 +54,23 @@ extern "C"
   //
   // All string parameters are UTF-8, may be NULL for empty.
   //   mode:           MarsAppenderMode
-  //   log_dir:        directory for log files
+  //   logs_dir:        directory for log files
+  //   cache_dir:      directory for cache files (may be same as logs_dir)
+  //   cache_days:     days to keep cache files
   //   name_prefix:    prefix of log file names
-  //   pub_key:        public key for log encryption (empty = no encryption)
   //   compress_mode:  MarsCompressMode
   //   compress_level: zlib/zstd compression level
-  //   cache_dir:      directory for cache files (may be same as log_dir)
-  //   cache_days:     days to keep cache files
-  FFI_PLUGIN_EXPORT void mars_xlog_appender_open(int mode, const char *log_dir, const char *name_prefix, const char *pub_key, int compress_mode, int compress_level, const char *cache_dir, int cache_days);
+  //   pub_key:        public key for log encryption (empty = no encryption)
+  FFI_PLUGIN_EXPORT void mars_xlog_appender_open(int mode, const char *logs_dir, const char *cache_dir, int cache_days, const char *name_prefix, int compress_mode, int compress_level, const char *pub_key);
 
   // Close the xlog appender.
-  FFI_PLUGIN_EXPORT void mars_xlog_appender_close(void);
+  FFI_PLUGIN_EXPORT void mars_xlog_appender_close();
 
   // Flush buffered logs to disk (async).
-  FFI_PLUGIN_EXPORT void mars_xlog_appender_flush(void);
+  FFI_PLUGIN_EXPORT void mars_xlog_appender_flush();
 
   // Flush buffered logs to disk and wait for completion.
-  FFI_PLUGIN_EXPORT void mars_xlog_appender_flush_sync(void);
+  FFI_PLUGIN_EXPORT void mars_xlog_appender_flush_sync();
 
   // Enable/disable printing logs to console.
   FFI_PLUGIN_EXPORT void mars_xlog_appender_set_console_log(int is_open);
@@ -82,7 +82,7 @@ extern "C"
   FFI_PLUGIN_EXPORT void mars_xlog_appender_set_max_alive_duration(int64_t max_time_seconds);
 
   // Get the current global log level.
-  FFI_PLUGIN_EXPORT int mars_xlog_xlogger_level(void);
+  FFI_PLUGIN_EXPORT int mars_xlog_xlogger_level();
 
   // Set the global log level filter.
   FFI_PLUGIN_EXPORT void mars_xlog_xlogger_set_level(int level);
@@ -93,10 +93,11 @@ extern "C"
   // Write a log message. Mirrors xlogger_Write with a filled XLoggerInfo.
   //   level:    MarsLogLevel
   //   tag:      log tag, may be NULL
-  //   filename: source file name, may be NULL
+  //   file_name: source file name, may be NULL
   //   line:     source line number
-  //   content:  log content (not NULL)
-  FFI_PLUGIN_EXPORT void mars_xlog_xlogger_write(int level, const char *tag, const char *filename, int line, const char *content);
+  //   func_name: source function name, may be NULL
+  //   message:  log message (not NULL)
+  FFI_PLUGIN_EXPORT void mars_xlog_xlogger_write(int level, const char *tag, const char *file_name, int line, const char *func_name, const char *message);
 
 #ifdef __cplusplus
 }

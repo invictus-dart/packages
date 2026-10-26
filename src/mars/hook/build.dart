@@ -15,10 +15,6 @@ void main(List<String> args) async {
   await build(args, (input, output) async {
     if (!input.config.buildCodeAssets) return;
 
-    final logger = Logger('mars-build')
-      ..level = Level.ALL
-      ..onRecord.listen((record) => stdout.writeln(record.message));
-
     final packageRoot = input.packageRoot.toFilePath();
     final marsRoot = '$packageRoot/src/mars';
     final codeConfig = input.config.code;
@@ -124,8 +120,12 @@ void main(List<String> args) async {
 
     // OpenSSL headers and libraries from vendored layout.
     final opensslIncludeDir = '$marsRoot/openssl/include';
-    final opensslLibDir = _opensslLibDir(marsRoot, targetOS, targetArch,
-        iosSdk: iosSdk);
+    final opensslLibDir = _opensslLibDir(
+      marsRoot,
+      targetOS,
+      targetArch,
+      iosSdk: iosSdk,
+    );
     if (opensslLibDir == null || !Directory(opensslLibDir).existsSync()) {
       throw UnsupportedError(
         'OpenSSL libraries not found for $targetOS/${targetArch.name}. '
@@ -331,7 +331,6 @@ void main(List<String> args) async {
         output: output,
         routing: linkingEnabled ? [ToLinkHook(input.packageName)] : const [],
         linkModePreference: LinkModePreference.static,
-        logger: logger,
       );
     }
 
@@ -375,7 +374,7 @@ void main(List<String> args) async {
           : const ['crypto', 'ssl'];
       final finalBuilder = CBuilder.library(
         name: 'mars',
-        assetName: 'mars_bindings_generated.dart',
+        assetName: 'src/mars.g.dart',
         language: Language.c,
         sources: bridgeSources,
         includes: includes,
@@ -394,7 +393,6 @@ void main(List<String> args) async {
         output: output,
         routing: const [ToAppBundle()],
         linkModePreference: LinkModePreference.dynamic,
-        logger: logger,
       );
     }
   });
@@ -466,9 +464,10 @@ String? _opensslLibDir(
     (OS.android, Architecture.x64) => '$base/x86_64',
     // iOS: arm64 serves both device and Apple Silicon simulator, but with
     // different OpenSSL slices; x64 is the Intel simulator slice.
-    (OS.iOS, Architecture.arm64) => iosSdk == IOSSdk.iPhoneSimulator
-        ? '$base/simulator_arm64'
-        : '$base/arm64',
+    (OS.iOS, Architecture.arm64) =>
+      iosSdk == IOSSdk.iPhoneSimulator
+          ? '$base/simulator_arm64'
+          : '$base/arm64',
     (OS.iOS, Architecture.x64) => '$base/x64',
     (OS.macOS, Architecture.arm64) => '$base/arm64',
     (OS.macOS, Architecture.x64) => '$base/x64',
