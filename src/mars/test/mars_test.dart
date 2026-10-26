@@ -4,10 +4,6 @@ import 'package:mars/mars.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('marsVersion is not empty', () {
-    expect(marsVersion, isNotEmpty);
-  });
-
   test('xlog open/write/flush/close writes a log file', () {
     final logDir = Directory.systemTemp.createTempSync('mars_test_log_');
     addTearDown(() => logDir.deleteSync(recursive: true));

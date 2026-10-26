@@ -1,19 +1,7 @@
 // Build hook: compiles the vendored Tencent/Mars SDK with native_toolchain_c
-// (replacing the upstream build_windows.py / CMake scripts).
-//
-// Strategy (mirrors the official MSVC build):
-//   * Each Mars module is compiled into its own static library (the upstream
-//     CMake produces per-module static libs: comm, boot, boost, app,
-//     baseevent, xlog, sdt, stn, zstd).
-//   * `language: Language.c` is used on purpose: on MSVC this avoids the
-//     `/TP` flag, so cl.exe compiles `.c` files as C and `.cc`/`.cpp` files as
-//     C++ by extension (same as the upstream CMake build).
-//   * `comm/projdef.h` is force-included (`/FI`) into every Mars translation
-//     unit, exactly like the upstream `/FI"../../comm/projdef.h"`.
-//   * Static libraries are routed to the link hook, which produces the final
-//     single-file dynamic library (hook/link.dart).
-//
-// See src/mars/SOURCE.md for the full mapping to the official build.
+// for every target in the platform matrix (Android, iOS, macOS, Linux, Windows).
+// Each Mars module is compiled into its own static library; the link hook
+// produces the final dynamic library.
 
 import 'dart:io';
 
@@ -34,65 +22,80 @@ void main(List<String> args) async {
     final packageRoot = input.packageRoot.toFilePath();
     final marsRoot = '$packageRoot/src/mars';
     final codeConfig = input.config.code;
-    final isWindows = codeConfig.targetOS == OS.windows;
+    final targetOS = codeConfig.targetOS;
+    final targetArch = codeConfig.targetArchitecture;
+    // iOS SDK (iPhoneOS device vs iPhoneSimulator) determines which vendored
+    // OpenSSL slice to use: device arm64 vs simulator arm64.
+    final iosSdk = targetOS == OS.iOS ? codeConfig.iOS.targetSdk : null;
+    final isWindows = targetOS == OS.windows;
+    final isAndroid = targetOS == OS.android;
+    final isApple = targetOS == OS.iOS || targetOS == OS.macOS;
+    final isLinux = targetOS == OS.linux;
 
-    // --- Compiler configuration (official MSVC settings) ------------------
+    // --- Compiler configuration -------------------------------------------
     final baseIncludes = <String>[
-      // Enable `#include "mars/comm/..."` style includes.
       '$packageRoot/src',
-      // Vendor root: `#include "comm/..."`, `#include "xlog/..."`, ...
       marsRoot,
-      // Module roots and official per-module include dirs.
-      '$marsRoot/comm',
-      '$marsRoot/comm/alarm',
-      '$marsRoot/comm/assert',
-      '$marsRoot/comm/corepattern',
-      '$marsRoot/comm/crypt',
-      '$marsRoot/comm/debugger',
-      '$marsRoot/comm/dns',
-      '$marsRoot/comm/messagequeue',
-      '$marsRoot/comm/network',
-      '$marsRoot/comm/socket',
-      '$marsRoot/comm/thread',
-      '$marsRoot/comm/xlogger',
-      '$marsRoot/comm/owl',
-      '$marsRoot/boot',
-      '$marsRoot/boot/src',
-      '$marsRoot/boost',
-      '$marsRoot/app',
-      '$marsRoot/app/src',
-      '$marsRoot/baseevent/src',
-      '$marsRoot/xlog',
-      '$marsRoot/xlog/src',
-      '$marsRoot/xlog/crypt',
-      '$marsRoot/xlog/crypt/micro-ecc-master',
-      '$marsRoot/sdt',
-      '$marsRoot/sdt/src',
-      '$marsRoot/sdt/src/activecheck',
-      '$marsRoot/sdt/src/checkimpl',
-      '$marsRoot/sdt/src/tools',
-      '$marsRoot/stn',
-      '$marsRoot/stn/src',
-      '$marsRoot/openssl/include',
+      // Module include dirs.
+      ...[
+        'comm',
+        'comm/alarm',
+        'comm/assert',
+        'comm/corepattern',
+        'comm/crypt',
+        'comm/debugger',
+        'comm/dns',
+        'comm/messagequeue',
+        'comm/network',
+        'comm/socket',
+        'comm/thread',
+        'comm/xlogger',
+        'comm/owl',
+        'boot',
+        'boot/src',
+        'boost',
+        'app',
+        'app/src',
+        'baseevent/src',
+        'xlog',
+        'xlog/src',
+        'xlog/crypt',
+        'xlog/crypt/micro-ecc-master',
+        'sdt',
+        'sdt/src',
+        'sdt/src/activecheck',
+        'sdt/src/checkimpl',
+        'sdt/src/tools',
+        'stn',
+        'stn/src',
+      ].map((d) => '$marsRoot/$d'),
       '$marsRoot/rapidjson',
       '$marsRoot/zstd/lib',
-      // zstd C sources use bare includes (`"debug.h"`, `"bitstream.h"`, ...)
-      // resolved from these sibling dirs (mirrors the zstd CMake include set).
-      '$marsRoot/zstd/lib/common',
-      '$marsRoot/zstd/lib/compress',
-      '$marsRoot/zstd/lib/decompress',
-      '$marsRoot/zstd/lib/dictBuilder',
-      '$marsRoot/zstd/lib/legacy',
-      '$marsRoot/zstd/lib/deprecated',
+      // zstd C sources use bare includes resolved from sibling dirs.
+      ...[
+        'common',
+        'compress',
+        'decompress',
+        'dictBuilder',
+        'legacy',
+        'deprecated',
+      ].map((d) => '$marsRoot/zstd/lib/$d'),
     ];
 
-    final windowsIncludes = <String>[
-      // Windows sys shims: `<sys/time.h>`, `<sys/cdefs.h>`, ...
-      '$marsRoot/comm/windows',
-      '$marsRoot/comm/windows/SocketSelect',
-      '$marsRoot/comm/windows/thread',
-      '$marsRoot/comm/windows/win32',
-      '$marsRoot/comm/windows/zlib',
+    final platformIncludes = <String>[
+      if (isWindows) ...[
+        '$marsRoot/comm/windows',
+        '$marsRoot/comm/windows/SocketSelect',
+        '$marsRoot/comm/windows/thread',
+        '$marsRoot/comm/windows/win32',
+        '$marsRoot/comm/windows/zlib',
+      ],
+      if (isApple) ...['$marsRoot/comm/objc', '$marsRoot/xlog/objc'],
+      if (isAndroid || isLinux) ...[
+        '$marsRoot/comm/unix',
+        '$marsRoot/comm/unix/socket',
+        if (isAndroid) '$marsRoot/comm/android',
+      ],
     ];
 
     final windowsDefines = <String, String?>{
@@ -102,75 +105,59 @@ void main(List<String> args) async {
       '_UNICODE': null,
       'NOMINMAX': null,
       '_LIB': null,
-      if (codeConfig.targetArchitecture == Architecture.x64 ||
-          codeConfig.targetArchitecture == Architecture.arm64) ...{
-        '_WIN64': null,
-        'WIN64': null,
-      },
-      // The vendored OpenSSL include dispatcher (opensslconf.h) selects the
-      // Windows config via `__WIN32__` (a MinGW-ism MSVC does not predefine).
-      // Without it the upstream header fails with "#error unsupported
-      // platform" on every MSVC build; defining it is the documented fix.
       '__WIN32__': null,
-      // Single merged XLOGGER_TAG (upstream uses "mars::<module>").
-      'XLOGGER_TAG': '"mars::mars"',
+      if (targetArch == Architecture.x64 || targetArch == Architecture.arm64)
+        '_WIN64': null,
+      'WIN64': null,
     };
 
     final windowsFlags = <String>[
-      '/MP',
-      // Dynamic CRT, matching the OpenSSL 3.5.9 prebuilt static libs
-      // (ConanCenter builds them with `compiler.runtime=dynamic`). A /MT
-      // final DLL would leave `__imp_fgets`-style CRT imports unresolved.
-      // The Dart host process itself links the dynamic CRT, so the produced
-      // mars.dll has no extra runtime dependency.
-      '/MD',
-      // Upstream warning suppressions (comm/CMakeExtraFlags.txt).
-      '/wd4003',
-      '/wd4819',
-      '/wd4996',
-      '/wd4244',
-      '/wd4101',
-      '/wd4200',
-      '/wd4800',
-      '/wd4005',
-      '/wd4334',
-      // REQUIRED on modern MSVC (VS 2022 17.6+ / VS 2026): the Mars xlogger
-      // TSF format-arg preprocessor machinery (PP_IF/PP_BOOL/PP_DEC/PP_SIZE
-      // in comm/xlogger/preprocessor.h) only expands correctly under the
-      // conformant preprocessor. The upstream Windows build (pinned to VS
-      // 2019) predates this; on MSVC 19.5x the legacy preprocessor emits
-      // "PP_IF_PP_BOOL_PP_DEC_PP_SIZE_" garbage. Verified against the
-      // upstream CMake build, which fails identically on this toolchain.
+      '/MP', '/MD',
+      // Upstream warning suppressions.
+      '/wd4003', '/wd4819', '/wd4996', '/wd4244', '/wd4101',
+      '/wd4200', '/wd4800', '/wd4005', '/wd4334',
+      // Required on MSVC 19.5x+ for xlogger TSF preprocessor macros.
       '/Zc:preprocessor',
-      // MSVC keeps __cplusplus at 199711L by default even in C++14 mode;
-      // Mars gates C++14-only code (e.g. comm/strutil.h to_string overloads)
-      // behind `#if __cplusplus > 201103L`, so without this flag those
-      // sections are silently compiled out and `strutil::to_string` is
-      // missing from the overload set.
+      // Mars gates C++14-only code behind __cplusplus > 201103L.
       '/Zc:__cplusplus',
     ];
 
-    // native_toolchain_c's CBuilder recursively lists every include directory
-    // to record output dependencies (cbuilder.dart `includeFiles`), and throws
-    // if one does not exist. The vendored release tree has no `boot/src`
-    // subdirectory (boot sources live in `boot/` directly), so only keep
-    // include dirs that actually exist.
+    // OpenSSL headers and libraries from vendored layout.
+    final opensslIncludeDir = '$marsRoot/openssl/include';
+    final opensslLibDir = _opensslLibDir(marsRoot, targetOS, targetArch,
+        iosSdk: iosSdk);
+    if (opensslLibDir == null || !Directory(opensslLibDir).existsSync()) {
+      throw UnsupportedError(
+        'OpenSSL libraries not found for $targetOS/${targetArch.name}. '
+        'Expected at $opensslLibDir.\n'
+        'Run tool/openssl_download.dart first, or copy libs to '
+        'src/mars/openssl/openssl_lib_${osToDir(targetOS)}/<arch>/.',
+      );
+    }
+    if (!Directory(opensslIncludeDir).existsSync()) {
+      throw UnsupportedError(
+        'OpenSSL headers not found at $opensslIncludeDir. '
+        'Run tool/openssl_download.dart first, or copy headers to '
+        'src/mars/openssl/include/.',
+      );
+    }
+
     final includes = <String>[
       ...baseIncludes,
-      if (isWindows) ...windowsIncludes,
+      ...platformIncludes,
+      opensslIncludeDir,
     ].where((dir) => Directory(dir).existsSync()).toList();
-    final defines = isWindows
-        ? <String, String?>{...windowsDefines}
-        : <String, String?>{};
+
+    final defines = <String, String?>{
+      'XLOGGER_TAG': '"mars::mars"',
+      if (isWindows) ...windowsDefines,
+      if (isAndroid) 'ANDROID': null,
+    };
     final flags = isWindows ? <String>[...windowsFlags] : <String>[];
 
-    // Official `/FI"../../comm/projdef.h"` (not applied to boost/zstd).
     final projdef = '$marsRoot/comm/projdef.h';
 
     // --- Source collection ------------------------------------------------
-    //
-    // Mirrors the per-module `file(GLOB ...)` lists from the upstream
-    // CMakeLists.txt MSVC branch.
     List<String> collect(
       String module,
       List<String> dirs, {
@@ -186,9 +173,9 @@ void main(List<String> args) async {
           final name = entity.uri.pathSegments.last;
           if (!(name.endsWith('.c') ||
               name.endsWith('.cc') ||
-              name.endsWith('.cpp'))) {
+              name.endsWith('.cpp') ||
+              name.endsWith('.mm')))
             continue;
-          }
           if (excludeFilePatterns.any(name.contains)) continue;
           files.add(entity.path);
         }
@@ -199,7 +186,7 @@ void main(List<String> args) async {
     final commSources = collect(
       'comm',
       [
-        '', // comm/*.cc, comm/*.c
+        '',
         'alarm',
         'assert',
         'crypt',
@@ -210,21 +197,25 @@ void main(List<String> args) async {
         'dns',
         'messagequeue',
         'owl/mpl',
-        // MSVC-only source groups.
-        'windows',
-        'windows/zlib',
-        'windows/win32',
-        'windows/sys',
-        'windows/SocketSelect',
+        if (isWindows) ...[
+          'windows',
+          'windows/zlib',
+          'windows/win32',
+          'windows/sys',
+          'windows/SocketSelect',
+        ],
+        if (!isWindows) 'unix/socket',
+        if (isAndroid) ...['android', 'unix'],
+        if (isApple) 'objc',
+        if (isLinux) 'unix',
       ],
       excludeFilePatterns: [
         '_unittest.cc',
         '_mock.cc',
-        // Removed from the MSVC build by the upstream CMake.
-        'local_routetable',
-        'getsocktcpinfo',
+        if (isWindows) ...['local_routetable', 'getsocktcpinfo'],
       ],
     );
+    if (isApple) commSources.add('$marsRoot/comm/debugger/debugger_utils.c');
 
     final bootSources = collect(
       'boot',
@@ -243,7 +234,7 @@ void main(List<String> args) async {
     );
     final xlogSources = collect(
       'xlog',
-      ['src', 'crypt', 'crypt/micro-ecc-master'],
+      ['src', 'crypt', 'crypt/micro-ecc-master', if (isApple) 'objc'],
       excludeFilePatterns: const ['_unittest.cc', '_mock.cc'],
     );
     final sdtSources = collect(
@@ -257,7 +248,6 @@ void main(List<String> args) async {
       excludeFilePatterns: const ['_unittest.cc', '_mock.cc'],
     );
 
-    // zstd: all .c under zstd/lib (upstream builds it via its own CMake).
     final zstdSources = <String>[
       for (final entity in Directory(
         '$marsRoot/zstd/lib',
@@ -265,8 +255,7 @@ void main(List<String> args) async {
         if (entity is File && entity.path.endsWith('.c')) entity.path,
     ];
 
-    // boost: the explicit source list from boost/CMakeLists.txt.
-    final boostList = [
+    final boostList = <String>[
       'libs/atomic/src/lockpool.cpp',
       'libs/date_time/src/gregorian/date_generators.cpp',
       'libs/date_time/src/gregorian/gregorian_types.cpp',
@@ -288,13 +277,19 @@ void main(List<String> args) async {
       'libs/smart_ptr/src/sp_debug_hooks.cpp',
       'libs/system/src/error_code.cpp',
       'libs/thread/src/future.cpp',
-      // MSVC-only sources.
-      'libs/thread/src/win32/thread.cpp',
-      'libs/thread/src/win32/tss_dll.cpp',
-      'libs/thread/src/win32/tss_pe.cpp',
+      if (isWindows) ...[
+        'libs/thread/src/win32/thread.cpp',
+        'libs/thread/src/win32/tss_dll.cpp',
+        'libs/thread/src/win32/tss_pe.cpp',
+      ],
+      if (!isWindows) ...[
+        'libs/thread/src/pthread/once.cpp',
+        'libs/thread/src/pthread/once_atomic.cpp',
+        'libs/thread/src/tss_null.cpp',
+      ],
     ].map((p) => '$marsRoot/boost/$p').toList();
+    if (isAndroid) boostList.addAll(_androidBoostSources(marsRoot, targetArch));
 
-    // FFI bridge (our own C++ code).
     final bridgeSources = ['$packageRoot/src/mars.cpp'];
 
     // --- Build each module as a static library ----------------------------
@@ -310,65 +305,19 @@ void main(List<String> args) async {
       'boost': _Module(
         boostList,
         forceProjdef: false,
-        flags: const ['/MP', '/MD', '/w'],
+        flags: isWindows ? const ['/MP', '/MD', '/w'] : const ['-w'],
       ),
       'mars_bridge': _Module(bridgeSources, forceProjdef: true),
     };
 
-    // When linking is enabled (e.g. `dart compile exe`, Flutter AOT builds),
-    // the per-module static libraries are routed to the link hook, which
-    // produces the final `mars.dll` (hook/link.dart).
-    //
-    // When linking is disabled (e.g. `dart test`, `dart run`), the runtime
-    // loads dynamic code assets directly, so the build hook itself has to
-    // produce `mars.dll`: compile the bridge against the per-module static
-    // libraries (and the OpenSSL prebuilts) into a single shared library,
-    // registered as the `mars_bindings_generated.dart` code asset.
     final linkingEnabled = input.config.linkingEnabled;
     final buildDir = input.outputDirectory.toFilePath();
 
-    String? opensslLibDir;
-    final systemLibraries = <String>[];
-    if (isWindows) {
-      switch (codeConfig.targetArchitecture) {
-        case Architecture.arm64:
-          opensslLibDir = '$marsRoot/openssl/openssl_lib_windows/arm64';
-        case Architecture.x64:
-          opensslLibDir = '$marsRoot/openssl/openssl_lib_windows/x64';
-        default:
-          throw UnsupportedError(
-            'No prebuilt OpenSSL for Windows '
-            '${codeConfig.targetArchitecture.name}; '
-            'available: arm64, x64 (OpenSSL 3.5.9); '
-            'x86 requires building OpenSSL 3.5.9 from source',
-          );
-      }
-      systemLibraries.addAll([
-        // Windows system libraries referenced by the Mars sources.
-        'ws2_32',
-        'iphlpapi',
-        'winhttp',
-        'wininet',
-        'advapi32',
-        'crypt32',
-        'user32',
-        'gdi32',
-        'shell32',
-        'ole32',
-        'runtimeobject',
-      ]);
-    }
-
     for (final entry in modules.entries) {
-      // The bridge is compiled directly into the final shared library when
-      // linking is disabled; skip the standalone bridge archive then.
       if (!linkingEnabled && entry.key == 'mars_bridge') continue;
       final module = entry.value;
       final builder = CBuilder.library(
         name: entry.key,
-        // Registers each module's static library as a code asset routed to
-        // the link hook. Without an assetName, `assets_for_linking` stays
-        // empty and the link hook never produces the final DLL.
         assetName: linkingEnabled ? entry.key : null,
         language: Language.c,
         sources: module.sources,
@@ -386,28 +335,59 @@ void main(List<String> args) async {
       );
     }
 
-    if (!linkingEnabled && isWindows) {
-      // The per-module static libraries live in the build output directory.
-      final moduleLibs = <String>[];
-      for (final name in modules.keys) {
-        if (name == 'mars_bridge') continue;
-        moduleLibs.add('$buildDir/$name.lib');
+    if (!linkingEnabled) {
+      final systemLibraries = <String>[];
+      final linkFlags = <String>[];
+      switch (targetOS) {
+        case OS.windows:
+          systemLibraries.addAll([
+            'ws2_32',
+            'iphlpapi',
+            'winhttp',
+            'wininet',
+            'advapi32',
+            'crypt32',
+            'user32',
+            'gdi32',
+            'shell32',
+            'ole32',
+            'runtimeobject',
+          ]);
+          linkFlags.add('/MD');
+        case OS.android:
+          systemLibraries.addAll(['log', 'z', 'dl', 'c++_static', 'c++abi']);
+        case OS.iOS || OS.macOS:
+          systemLibraries.addAll(['z', 'pthread', 'dl', 'c++']);
+          linkFlags.addAll([
+            '-framework',
+            'Foundation',
+            '-framework',
+            'SystemConfiguration',
+          ]);
+        case OS.linux:
+          systemLibraries.addAll(['z', 'pthread', 'dl', 'stdc++']);
+        default:
+          throw UnsupportedError('Unsupported targetOS: $targetOS');
       }
+
+      final opensslLibs = isWindows
+          ? const ['libcrypto', 'libssl']
+          : const ['crypto', 'ssl'];
       final finalBuilder = CBuilder.library(
         name: 'mars',
         assetName: 'mars_bindings_generated.dart',
         language: Language.c,
         sources: bridgeSources,
         includes: includes,
-        forcedIncludes: [projdef],
+        forcedIncludes: isWindows ? [projdef] : const [],
         defines: defines,
-        flags: flags,
+        flags: [...flags, ...linkFlags],
         libraries: [
           ...modules.keys.where((name) => name != 'mars_bridge'),
-          if (opensslLibDir != null) ...['libcrypto', 'libssl'],
+          ...opensslLibs,
           ...systemLibraries,
         ],
-        libraryDirectories: [buildDir, ?opensslLibDir],
+        libraryDirectories: [buildDir, opensslLibDir],
       );
       await finalBuilder.run(
         input: input,
@@ -419,6 +399,98 @@ void main(List<String> args) async {
     }
   });
 }
+
+/// Boost coroutine + context sources required only by Android.
+List<String> _androidBoostSources(String marsRoot, Architecture arch) {
+  final sources = <String>[];
+  for (final dir in [
+    'libs/coroutine/src',
+    'libs/coroutine/src/detail',
+    'libs/coroutine/src/posix',
+    'libs/context/src',
+    'libs/context/src/posix',
+  ]) {
+    final directory = Directory('$marsRoot/boost/$dir');
+    if (!directory.existsSync()) continue;
+    for (final entity in directory.listSync(recursive: false)) {
+      if (entity is File &&
+          (entity.path.endsWith('.cpp') || entity.path.endsWith('.c'))) {
+        sources.add(entity.path);
+      }
+    }
+  }
+  final asmFiles = switch (arch) {
+    Architecture.arm => const [
+      'jump_arm_aapcs_elf_gas.S',
+      'make_arm_aapcs_elf_gas.S',
+    ],
+    Architecture.arm64 => const [
+      'jump_arm64_aapcs_elf_gas.S',
+      'make_arm64_aapcs_elf_gas.S',
+    ],
+    Architecture.ia32 => const [
+      'jump_i386_sysv_elf_gas.S',
+      'make_i386_sysv_elf_gas.S',
+    ],
+    Architecture.x64 => const [
+      'jump_x86_64_sysv_elf_gas.S',
+      'make_x86_64_sysv_elf_gas.S',
+    ],
+    _ => throw UnsupportedError(
+      'No boost context asm for Android ${arch.name}; supported: '
+      'arm (armeabi-v7a), arm64 (arm64-v8a), ia32 (x86), x64 (x86_64)',
+    ),
+  };
+  for (final asm in asmFiles) {
+    final path = '$marsRoot/boost/libs/context/src/asm/$asm';
+    if (File(path).existsSync()) sources.add(path);
+  }
+  return sources;
+}
+
+/// Resolve OpenSSL library directory from the vendored layout.
+///
+/// For iOS, the target SDK (device vs simulator) selects between the arm64
+/// device slice and the Apple Silicon simulator slice.
+String? _opensslLibDir(
+  String marsRoot,
+  OS os,
+  Architecture arch, {
+  IOSSdk? iosSdk,
+}) {
+  final base = '$marsRoot/openssl/openssl_lib_${osToDir(os)}';
+  return switch ((os, arch)) {
+    (OS.android, Architecture.arm) => '$base/armeabi-v7a',
+    (OS.android, Architecture.arm64) => '$base/arm64-v8a',
+    (OS.android, Architecture.ia32) => '$base/x86',
+    (OS.android, Architecture.x64) => '$base/x86_64',
+    // iOS: arm64 serves both device and Apple Silicon simulator, but with
+    // different OpenSSL slices; x64 is the Intel simulator slice.
+    (OS.iOS, Architecture.arm64) => iosSdk == IOSSdk.iPhoneSimulator
+        ? '$base/simulator_arm64'
+        : '$base/arm64',
+    (OS.iOS, Architecture.x64) => '$base/x64',
+    (OS.macOS, Architecture.arm64) => '$base/arm64',
+    (OS.macOS, Architecture.x64) => '$base/x64',
+    (OS.linux, Architecture.arm) => '$base/arm32',
+    (OS.linux, Architecture.arm64) => '$base/arm64',
+    (OS.linux, Architecture.ia32) => '$base/x86',
+    (OS.linux, Architecture.x64) => '$base/x64',
+    (OS.windows, Architecture.arm64) => '$base/arm64',
+    (OS.windows, Architecture.x64) => '$base/x64',
+    (OS.windows, Architecture.ia32) => '$base/x86',
+    _ => null,
+  };
+}
+
+String osToDir(OS os) => switch (os) {
+  OS.android => 'android',
+  OS.iOS => 'ios',
+  OS.macOS => 'macos',
+  OS.linux => 'linux',
+  OS.windows => 'windows',
+  _ => throw UnsupportedError('Unsupported OS: $os'),
+};
 
 class _Module {
   final List<String> sources;

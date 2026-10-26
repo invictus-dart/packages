@@ -4,13 +4,17 @@
 // ignore_for_file: type=lint, unused_import, unused_element, deprecated_member_use_from_same_package
 import 'dart:ffi' as ffi;
 
-/// Build/version info of the compiled Mars SDK.
-@ffi.Native<ffi.Pointer<ffi.Char> Function()>()
-external ffi.Pointer<ffi.Char> mars_version();
-
 /// Close the xlog appender.
 @ffi.Native<ffi.Void Function()>()
 external void mars_xlog_appender_close();
+
+/// Flush buffered logs to disk (async).
+@ffi.Native<ffi.Void Function()>()
+external void mars_xlog_appender_flush();
+
+/// Flush buffered logs to disk and wait for completion.
+@ffi.Native<ffi.Void Function()>()
+external void mars_xlog_appender_flush_sync();
 
 /// Open the xlog appender. Mirrors mars::xlog::appender_open(XLogConfig).
 ///
@@ -46,37 +50,29 @@ external void mars_xlog_appender_open(
   int cache_days,
 );
 
-/// Flush buffered logs to disk (async).
-@ffi.Native<ffi.Void Function()>()
-external void mars_xlog_flush();
-
-/// Flush buffered logs to disk and wait for completion.
-@ffi.Native<ffi.Void Function()>()
-external void mars_xlog_flush_sync();
-
-/// Get the current global log level.
-@ffi.Native<ffi.Int Function()>()
-external int mars_xlog_get_level();
-
-/// Whether messages of the given level will be logged.
-@ffi.Native<ffi.Int Function(ffi.Int)>()
-external int mars_xlog_is_enabled(int level);
-
 /// Enable/disable printing logs to console.
 @ffi.Native<ffi.Void Function(ffi.Int)>()
-external void mars_xlog_set_console_log(int is_open);
-
-/// Set the global log level filter.
-@ffi.Native<ffi.Void Function(ffi.Int)>()
-external void mars_xlog_set_level(int level);
+external void mars_xlog_appender_set_console_log(int is_open);
 
 /// Max alive duration of a single log file in seconds.
 @ffi.Native<ffi.Void Function(ffi.Int64)>()
-external void mars_xlog_set_max_alive_duration(int max_time_seconds);
+external void mars_xlog_appender_set_max_alive_duration(int max_time_seconds);
 
 /// Split log files when a single file exceeds max_byte_size (0 = no split).
 @ffi.Native<ffi.Void Function(ffi.Uint64)>()
-external void mars_xlog_set_max_file_size(int max_byte_size);
+external void mars_xlog_appender_set_max_file_size(int max_byte_size);
+
+/// Whether messages of the given level will be logged.
+@ffi.Native<ffi.Int Function(ffi.Int)>()
+external int mars_xlog_xlogger_is_enabled_for(int level);
+
+/// Get the current global log level.
+@ffi.Native<ffi.Int Function()>()
+external int mars_xlog_xlogger_level();
+
+/// Set the global log level filter.
+@ffi.Native<ffi.Void Function(ffi.Int)>()
+external void mars_xlog_xlogger_set_level(int level);
 
 /// Write a log message. Mirrors xlogger_Write with a filled XLoggerInfo.
 /// level:    MarsLogLevel
@@ -93,7 +89,7 @@ external void mars_xlog_set_max_file_size(int max_byte_size);
     ffi.Pointer<ffi.Char>,
   )
 >()
-external void mars_xlog_write(
+external void mars_xlog_xlogger_write(
   int level,
   ffi.Pointer<ffi.Char> tag,
   ffi.Pointer<ffi.Char> filename,

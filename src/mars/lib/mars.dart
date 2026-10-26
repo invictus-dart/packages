@@ -67,12 +67,6 @@ class XLogConfig {
   });
 }
 
-/// Version of the compiled Mars SDK (MARS_REVISION).
-String get marsVersion {
-  final pointer = bindings.mars_version();
-  return pointer == nullptr ? '' : pointer.cast<Utf8>().toDartString();
-}
-
 /// Open the xlog appender. See [XLogConfig].
 void xlogOpen(XLogConfig config) {
   final logDir = config.logDir.toNativeUtf8().cast<Char>();
@@ -102,22 +96,22 @@ void xlogOpen(XLogConfig config) {
 void xlogClose() => bindings.mars_xlog_appender_close();
 
 /// Flush buffered logs to disk (async).
-void xlogFlush() => bindings.mars_xlog_flush();
+void xlogFlush() => bindings.mars_xlog_appender_flush();
 
 /// Flush buffered logs to disk and wait for completion.
-void xlogFlushSync() => bindings.mars_xlog_flush_sync();
+void xlogFlushSync() => bindings.mars_xlog_appender_flush_sync();
 
 /// Enable/disable printing logs to the console.
 void xlogSetConsoleLog({bool open = true}) =>
-    bindings.mars_xlog_set_console_log(open ? 1 : 0);
+    bindings.mars_xlog_appender_set_console_log(open ? 1 : 0);
 
 /// Split log files when a single file exceeds [maxByteSize] (0 = no split).
 void xlogSetMaxFileSize(int maxByteSize) =>
-    bindings.mars_xlog_set_max_file_size(maxByteSize);
+    bindings.mars_xlog_appender_set_max_file_size(maxByteSize);
 
 /// Max alive duration of a single log file in seconds.
 void xlogSetMaxAliveDuration(int maxTimeSeconds) =>
-    bindings.mars_xlog_set_max_alive_duration(maxTimeSeconds);
+    bindings.mars_xlog_appender_set_max_alive_duration(maxTimeSeconds);
 
 /// Write a log message.
 ///
@@ -128,7 +122,7 @@ void xlogWrite(MarsLogLevel level, String? tag, String? filename, int line,
   final filenamePtr = filename?.toNativeUtf8().cast<Char>() ?? nullptr;
   final contentPtr = content.toNativeUtf8().cast<Char>();
   try {
-    bindings.mars_xlog_write(
+    bindings.mars_xlog_xlogger_write(
       level.value,
       tagPtr,
       filenamePtr,
@@ -144,12 +138,12 @@ void xlogWrite(MarsLogLevel level, String? tag, String? filename, int line,
 
 /// Set the global log level filter.
 void xlogSetLevel(MarsLogLevel level) =>
-    bindings.mars_xlog_set_level(level.value);
+    bindings.mars_xlog_xlogger_set_level(level.value);
 
 /// Get the current global log level.
 MarsLogLevel xlogGetLevel() =>
-    MarsLogLevel.values[bindings.mars_xlog_get_level()];
+    MarsLogLevel.values[bindings.mars_xlog_xlogger_level()];
 
 /// Whether messages of the given [level] will be logged.
 bool xlogIsEnabled(MarsLogLevel level) =>
-    bindings.mars_xlog_is_enabled(level.value) != 0;
+    bindings.mars_xlog_xlogger_is_enabled_for(level.value) != 0;
