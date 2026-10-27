@@ -104,21 +104,7 @@ abstract final class XLog {
 
   static void close() => ffi.mars_xlog_appender_close();
 
-  static void verbose(String tag, String message) =>
-      _write(.verbose, tag, message);
-
-  static void debug(String tag, String message) => _write(.debug, tag, message);
-
-  static void info(String tag, String message) => _write(.info, tag, message);
-
-  static void warning(String tag, String message) =>
-      _write(.warn, tag, message);
-
-  static void error(String tag, String message) => _write(.error, tag, message);
-
-  static void fatal(String tag, String message) => _write(.fatal, tag, message);
-
-  static void _write(XLogLevel level, String tag, String message) {
+  static void write(XLogLevel level, String tag, String message) {
     final isEnabled = ffi.mars_xlog_xlogger_is_enabled_for(level.value) != 0;
     if (!isEnabled) return;
     ffi.mars_xlog_xlogger_write(
@@ -130,4 +116,17 @@ abstract final class XLog {
       message.toNativeUtf8().cast(),
     );
   }
+
+  static void verbose(String tag, String message) =>
+      write(.verbose, tag, message);
+
+  static void debug(String tag, String message) => write(.debug, tag, message);
+
+  static void info(String tag, String message) => write(.info, tag, message);
+
+  static void warning(String tag, String message) => write(.warn, tag, message);
+
+  static void error(String tag, String message) => write(.error, tag, message);
+
+  static void fatal(String tag, String message) => write(.fatal, tag, message);
 }

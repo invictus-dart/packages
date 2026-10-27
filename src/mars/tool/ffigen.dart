@@ -23,10 +23,19 @@ Future<void> main() async {
     ),
     output: Output(
       dart: DartOutput(path: rootUri.resolve('lib/src/mars.g.dart')),
+      // Generates lib/src/mars_record_use_mapping.dart, a Dart-name to
+      // native-symbol mapping consumed by hook/link.dart for treeshaking.
+      recordUseMapping: rootUri.resolve('lib/src/mars_record_use_mapping.dart'),
     ),
     visitors: [
       Visitor(
-        func: (node) => node.isIncluded = true,
+        func: (node) {
+          node.isIncluded = true;
+          // Annotate every generated binding with @RecordUse() so the
+          // compiler records actual call sites (input.recordedUses in the
+          // link hook) and link.dart can treeshake unused symbols.
+          node.recordUse = true;
+        },
         struct: (node) => node.isIncluded = true,
         union: (node) => node.isIncluded = true,
         enumClass: (node) => node.isIncluded = true,
