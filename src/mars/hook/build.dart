@@ -16,8 +16,7 @@ void main(List<String> args) async {
   await build(args, (input, output) async {
     if (!input.config.buildCodeAssets) return;
 
-    final packageRoot = input.packageRoot.toFilePath();
-    final marsRoot = '$packageRoot/src/mars';
+    final packageRoot = input.packageRoot;
     final codeConfig = input.config.code;
     final targetOS = codeConfig.targetOS;
     final targetArch = codeConfig.targetArchitecture;
@@ -90,6 +89,22 @@ void main(List<String> args) async {
     final forceIncudes = isWindows
         ? <String>['src/mars/comm/projdef.h']
         : const <String>[];
+    final flags = isWindows
+        ? <String>[
+            // Match upstream mars Windows builds (CMake/VS default) and the
+            // ConanCenter openssl/3.5.9 prebuilt libs (compiler.runtime=dynamic):
+            // both use the /MD runtime, so mars must not force /MT. The 10/26
+            // successful Windows build compiled all modules with /MD.
+            '/MP', '/MD',
+            // Upstream warning suppressions.
+            '/wd4003', '/wd4819', '/wd4996', '/wd4244', '/wd4101',
+            '/wd4200', '/wd4800', '/wd4005', '/wd4334',
+            // Required on MSVC 19.5x+ for xlogger TSF preprocessor macros.
+            '/Zc:preprocessor',
+            // Mars gates C++14-only code behind __cplusplus > 201103L.
+            '/Zc:__cplusplus',
+          ]
+        : <String>[];
     final defines = <String, String?>{
       'XLOGGER_TAG': '"mars::mars"',
       if (isAndroid) 'ANDROID': null,
@@ -106,18 +121,6 @@ void main(List<String> args) async {
         'WIN64': null,
       },
     };
-    final flags = isWindows
-        ? <String>[
-            '/MP', '/MT',
-            // Upstream warning suppressions.
-            '/wd4003', '/wd4819', '/wd4996', '/wd4244', '/wd4101',
-            '/wd4200', '/wd4800', '/wd4005', '/wd4334',
-            // Required on MSVC 19.5x+ for xlogger TSF preprocessor macros.
-            '/Zc:preprocessor',
-            // Mars gates C++14-only code behind __cplusplus > 201103L.
-            '/Zc:__cplusplus',
-          ]
-        : <String>[];
 
     // --- Source collection ------------------------------------------------
     // All module sources are listed as flat, explicit file paths (no
@@ -408,59 +411,89 @@ void main(List<String> args) async {
     // directly in the final dynamic library since it only contains FFI bindings.
     // First-party Mars modules share the global defines/flags and get the
     // projdef.h forced include (equivalent to the official /FI on Windows).
-    final marsParts = <_BuildPart>[
-      _BuildPart(name: 'app', sources: appSources),
-      _BuildPart(name: 'baseevent', sources: baseeventSources),
-      _BuildPart(name: 'boot', sources: bootSources),
-      _BuildPart(name: 'comm', sources: commSources),
-      _BuildPart(name: 'sdt', sources: sdtSources),
-      _BuildPart(name: 'stn', sources: stnSources),
-      _BuildPart(name: 'xlog', sources: xlogSources),
+    final marsParts = <_MarsPart>[
+      _MarsPart(
+        name: 'app',
+        sources: appSources,
+        includes: includes,
+        forceIncludes: forceIncudes,
+        flags: flags,
+        defines: defines,
+      ),
+      _MarsPart(
+        name: 'baseevent',
+        sources: baseeventSources,
+        includes: includes,
+        forceIncludes: forceIncudes,
+        flags: flags,
+        defines: defines,
+      ),
+      _MarsPart(
+        name: 'boot',
+        sources: bootSources,
+        includes: includes,
+        forceIncludes: forceIncudes,
+        flags: flags,
+        defines: defines,
+      ),
+      _MarsPart(
+        name: 'comm',
+        sources: commSources,
+        includes: includes,
+        forceIncludes: forceIncudes,
+        flags: flags,
+        defines: defines,
+      ),
+      _MarsPart(
+        name: 'sdt',
+        sources: sdtSources,
+        includes: includes,
+        forceIncludes: forceIncudes,
+        flags: flags,
+        defines: defines,
+      ),
+      _MarsPart(
+        name: 'stn',
+        sources: stnSources,
+        includes: includes,
+        forceIncludes: forceIncudes,
+        flags: flags,
+        defines: defines,
+      ),
+      _MarsPart(
+        name: 'xlog',
+        sources: xlogSources,
+        includes: includes,
+        forceIncludes: forceIncudes,
+        flags: flags,
+        defines: defines,
+      ),
     ];
     // Third-party modules keep their own defines/flags only and must NOT
     // inherit global flags (e.g. /wd* on Windows) or the projdef include.
     // boost: -DBOOST_NO_EXCEPTIONS + -w (official CMake), zstd: no extras.
-    final thirdPartyParts = <_BuildPart>[
-      _BuildPart(
+    final thirdPartyParts = <_MarsPart>[
+      _MarsPart(
         name: 'boost',
         sources: boostSources,
+        includes: includes,
         defines: {'BOOST_NO_EXCEPTIONS': null},
-        flags: isWindows ? const ['/MP', '/MT', '/w'] : const ['-w'],
+        // boost's mpl/preprocessor recursion needs the conformant preprocessor
+        // on MSVC 19.5x+ (same reason the global flags carry /Zc:preprocessor).
+        // Verified: the 10/26 successful build compiled boost with the global
+        // flags including /Zc:preprocessor and /Zc:__cplusplus.
+        flags: isWindows
+            ? const ['/MP', '/MD', '/w', '/Zc:preprocessor', '/Zc:__cplusplus']
+            : const ['-w'],
       ),
-      _BuildPart(name: 'zstd', sources: zstdSources),
+      _MarsPart(name: 'zstd', sources: zstdSources, includes: includes),
     ];
 
     for (final marsPart in marsParts) {
-      final builder = CBuilder.library(
-        name: marsPart.name,
-        sources: marsPart.sources,
-        includes: includes,
-        forcedIncludes: forceIncudes,
-        defines: {...defines, ...marsPart.defines},
-        flags: [...flags, ...marsPart.flags],
-      );
-      await builder.run(
-        input: input,
-        output: output,
-        linkModePreference: LinkModePreference.static,
-      );
+      await _buildMarsPart(marsPart, input: input, output: output);
     }
     for (final thirdPartyPart in thirdPartyParts) {
-      final builder = CBuilder.library(
-        name: thirdPartyPart.name,
-        sources: thirdPartyPart.sources,
-        includes: includes,
-        defines: thirdPartyPart.defines,
-        flags: thirdPartyPart.flags,
-      );
-      await builder.run(
-        input: input,
-        output: output,
-        // Static module libraries are not routed to the link hook: treeshake
-        // (link.dart) only applies to the final dynamic library below.
-        routing: const [],
-        linkModePreference: LinkModePreference.static,
-      );
+      await _buildMarsPart(thirdPartyPart, input: input, output: output);
     }
 
     // --- Final dynamic library --------------------------------------------
@@ -469,42 +502,28 @@ void main(List<String> args) async {
     // linkingEnabled:
     //   - false → ToAppBundle (directly into the app bundle)
     //   - true  → ToLinkHook (pass through link hook for treeshake)
-    final systemLibraries = <String>[];
-    final linkFlags = <String>[];
-    switch (targetOS) {
-      case OS.windows:
-        systemLibraries.addAll([
-          'ws2_32',
-          'iphlpapi',
-          'winhttp',
-          'wininet',
-          'advapi32',
-          'crypt32',
-          'user32',
-          'gdi32',
-          'shell32',
-          'ole32',
-          'runtimeobject',
-        ]);
-        linkFlags.add('/MT');
-      case OS.android:
-        systemLibraries.addAll(['log', 'z', 'dl', 'c++_static', 'c++abi']);
-      case OS.iOS || OS.macOS:
-        systemLibraries.addAll(['z', 'pthread', 'dl', 'c++']);
-        linkFlags.addAll([
-          '-framework',
-          'Foundation',
-          '-framework',
-          'SystemConfiguration',
-        ]);
-      case OS.linux:
-        systemLibraries.addAll(['z', 'pthread', 'dl', 'stdc++']);
-      default:
-        throw UnsupportedError('Unsupported targetOS: $targetOS');
-    }
+    final systemLibs = switch (targetOS) {
+      .android => ['log', 'z'],
+      .iOS || .macOS => ['z', 'pthread', 'dl'],
+      .windows => [
+        'ws2_32',
+        'iphlpapi',
+        'winhttp',
+        'wininet',
+        'advapi32',
+        'crypt32',
+        'user32',
+        'gdi32',
+        'shell32',
+        'ole32',
+        'runtimeobject',
+      ],
+      .linux => ['z', 'pthread', 'dl'],
+      _ => [],
+    };
 
-    final opensslLibDir = _getOpensslLibDir(
-      marsRoot,
+    final opensslLibDir = _getOpensslLibsDir(
+      packageRoot,
       targetOS,
       targetArch,
       iosSdk: iosSdk,
@@ -512,23 +531,26 @@ void main(List<String> args) async {
     final opensslLibs = isWindows
         ? const ['libcrypto', 'libssl']
         : const ['crypto', 'ssl'];
-    final finalBuilder = CBuilder.library(
+
+    final builder = CBuilder.library(
       name: 'mars',
       assetName: 'src/mars.g.dart',
-      sources: ['$packageRoot/src/mars.cpp'],
+      sources: ['src/mars.cpp'],
       includes: includes,
-      forcedIncludes: isWindows ? forceIncudes : const [],
-      defines: defines,
-      flags: [...flags, ...linkFlags],
+      forcedIncludes: forceIncudes,
+      frameworks: ['Foundation', 'SystemConfiguration'],
       libraries: [
         ...marsParts.map((m) => m.name),
         ...thirdPartyParts.map((m) => m.name),
+        ...systemLibs,
         ...opensslLibs,
-        ...systemLibraries,
       ],
       libraryDirectories: ['.', opensslLibDir],
+      flags: flags,
+      defines: defines,
+      language: .cpp,
     );
-    await finalBuilder.run(
+    await builder.run(
       input: input,
       output: output,
       routing: input.config.linkingEnabled
@@ -544,88 +566,120 @@ void main(List<String> args) async {
 // there is intentionally no directory-enumeration helper left in this file.
 
 /// Boost context asm files required only by Android, selected per ABI.
-List<String> _getAndroidBoostAsmSources(Architecture arch) {
-  final fileNames = switch (arch) {
-    Architecture.arm => const [
-      'jump_arm_aapcs_elf_gas.S',
-      'make_arm_aapcs_elf_gas.S',
-    ],
-    Architecture.arm64 => const [
-      'jump_arm64_aapcs_elf_gas.S',
-      'make_arm64_aapcs_elf_gas.S',
-    ],
-    Architecture.ia32 => const [
-      'jump_i386_sysv_elf_gas.S',
-      'make_i386_sysv_elf_gas.S',
-    ],
-    Architecture.x64 => const [
-      'jump_x86_64_sysv_elf_gas.S',
-      'make_x86_64_sysv_elf_gas.S',
-    ],
-    _ => throw UnsupportedError(
-      'No boost context asm for Android ${arch.name}; supported: armeabi-v7a, arm64-v8a, x86, x86_64',
-    ),
+List<String> _getAndroidBoostAsmSources(Architecture architecture) {
+  final architectureName = switch (architecture) {
+    .arm => 'arm_aapcs',
+    .arm64 => 'arm64_aapcs',
+    .ia32 => 'i386_sysv',
+    .x64 => 'x86_64_sysv',
+    _ => throw UnsupportedError('No boost context asm for $architecture'),
   };
-  return fileNames
-      .map((fileName) => 'src/mars/boost/libs/context/src/asm/$fileName')
-      .toList();
+  return [
+    'src/mars/boost/libs/context/src/asm/jump_${architectureName}_elf_gas.S',
+    'src/mars/boost/libs/context/src/asm/make_${architectureName}_elf_gas.S',
+  ];
 }
 
 /// Resolve OpenSSL library directory from the vendored layout.
 ///
 /// For iOS, the target SDK (device vs simulator) selects between the arm64
 /// device slice and the Apple Silicon simulator slice.
-String _getOpensslLibDir(
-  String marsRoot,
+String _getOpensslLibsDir(
+  Uri packageRoot,
   OS os,
-  Architecture arch, {
+  Architecture architecture, {
   IOSSdk? iosSdk,
 }) {
-  final base = '$marsRoot/openssl/openssl_lib_${osToDir(os)}';
-  return switch ((os, arch)) {
-    (OS.android, Architecture.arm) => '$base/armeabi-v7a',
-    (OS.android, Architecture.arm64) => '$base/arm64-v8a',
-    (OS.android, Architecture.ia32) => '$base/x86',
-    (OS.android, Architecture.x64) => '$base/x86_64',
-    // iOS: arm64 serves both device and Apple Silicon simulator, but with
-    // different OpenSSL slices; x64 is the Intel simulator slice.
-    (OS.iOS, Architecture.arm64) =>
-      iosSdk == IOSSdk.iPhoneSimulator
-          ? '$base/simulator_arm64'
-          : '$base/arm64',
-    (OS.iOS, Architecture.x64) => '$base/x64',
-    (OS.macOS, Architecture.arm64) => '$base/arm64',
-    (OS.macOS, Architecture.x64) => '$base/x64',
-    (OS.linux, Architecture.arm) => '$base/arm32',
-    (OS.linux, Architecture.arm64) => '$base/arm64',
-    (OS.linux, Architecture.ia32) => '$base/x86',
-    (OS.linux, Architecture.x64) => '$base/x64',
-    (OS.windows, Architecture.arm64) => '$base/arm64',
-    (OS.windows, Architecture.x64) => '$base/x64',
-    (OS.windows, Architecture.ia32) => '$base/x86',
-    _ => throw UnsupportedError('Unsupported os: $os, $arch'),
+  final architectureName = switch (os) {
+    .android => switch (architecture) {
+      .arm => 'armeabi-v7a',
+      .arm64 => 'arm64-v8a',
+      .ia32 => 'x86',
+      .x64 => 'x86_64',
+      _ => throw UnsupportedError(
+        'Unsupported architecture: $os, $architecture',
+      ),
+    },
+    .iOS => switch (architecture) {
+      .arm64 => switch (iosSdk) {
+        .iPhoneOS => 'arm64',
+        .iPhoneSimulator => 'simulator_arm64',
+        _ => throw UnsupportedError(
+          'Unsupported iOS SDK: $os, $architecture, $iosSdk',
+        ),
+      },
+      .x64 => 'x64',
+      _ => throw UnsupportedError(
+        'Unsupported architecture: $os, $architecture',
+      ),
+    },
+    .macOS => switch (architecture) {
+      .arm64 => 'arm64',
+      .x64 => 'x64',
+      _ => throw UnsupportedError(
+        'Unsupported architecture: $os, $architecture',
+      ),
+    },
+    .windows => switch (architecture) {
+      .arm64 => 'arm64',
+      .ia32 => 'x86',
+      .x64 => 'x64',
+      _ => throw UnsupportedError(
+        'Unsupported architecture: $os, $architecture',
+      ),
+    },
+    .linux => switch (architecture) {
+      .arm => 'arm32',
+      .arm64 => 'arm64',
+      .ia32 => 'x86',
+      .x64 => 'x64',
+      _ => throw UnsupportedError(
+        'Unsupported architecture: $os, $architecture',
+      ),
+    },
+    _ => throw UnsupportedError('Unsupported os: $os'),
   };
+  return packageRoot
+      .resolve('src/mars/openssl/openssl_lib_${os.name}/$architectureName/')
+      .toFilePath();
 }
 
-String osToDir(OS os) => switch (os) {
-  OS.android => 'android',
-  OS.iOS => 'ios',
-  OS.macOS => 'macos',
-  OS.linux => 'linux',
-  OS.windows => 'windows',
-  _ => throw UnsupportedError('Unsupported OS: $os'),
-};
+Future<void> _buildMarsPart(
+  _MarsPart marsPart, {
+  required BuildInput input,
+  required BuildOutputBuilder output,
+  Logger? logger,
+}) async {
+  final builder = CBuilder.library(
+    name: marsPart.name,
+    sources: marsPart.sources,
+    includes: marsPart.includes,
+    forcedIncludes: marsPart.forceIncludes,
+    flags: marsPart.flags,
+    defines: marsPart.defines,
+  );
+  await builder.run(
+    input: input,
+    output: output,
+    logger: logger,
+    linkModePreference: .static,
+  );
+}
 
-class _BuildPart {
+class _MarsPart {
   final String name;
   final List<String> sources;
+  final List<String> includes;
+  final List<String> forceIncludes;
   final Map<String, String?> defines;
   final List<String> flags;
 
-  const _BuildPart({
+  const _MarsPart({
     required this.name,
     required this.sources,
-    this.defines = const {},
+    this.includes = const [],
+    this.forceIncludes = const [],
     this.flags = const [],
+    this.defines = const {},
   });
 }
