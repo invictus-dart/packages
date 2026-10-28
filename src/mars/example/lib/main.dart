@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:mars/src/mars.g.dart';
+import 'package:mars/mars.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart' as path;
 
-void main() {
+void main() async {
+  final filesDir = await path.getApplicationSupportDirectory();
+  final logsDir = path.join(filesDir.path, 'logs');
+  final cacheDir = path.join(logsDir, 'cache');
+  XLog.open(logsDir: logsDir, cacheDir: cacheDir);
   runApp(const MyApp());
 }
 
@@ -16,11 +22,8 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    // Keep a few FFI bindings alive so the record_use compiler pass records
-    // them; the link hook then treeshakes the dylib to only these symbols.
-    mars_xlog_xlogger_set_level(MarsLogLevel.kMarsLogLevelInfo.value);
-    mars_xlog_xlogger_level();
-    mars_xlog_appender_close();
+    XLog.info('MyApp', 'INFO');
+    XLog.flush(true);
   }
 
   @override
