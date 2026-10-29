@@ -98,7 +98,7 @@ extern BOOL (WINAPI * const _pRawDllMainOrig)(HANDLE, DWORD, LPVOID);
 extern BOOL (WINAPI * const _pDefaultRawDllMainOrig)(HANDLE, DWORD, LPVOID) = NULL;
 #if defined (_M_IX86)
 #pragma comment(linker, "/alternatename:__pRawDllMainOrig=__pDefaultRawDllMainOrig")
-#elif defined (_M_X64) || defined (_M_ARM) || defined (_M_ARM64)
+#elif defined (_M_X64) || defined (_M_ARM)
 #pragma comment(linker, "/alternatename:_pRawDllMainOrig=_pDefaultRawDllMainOrig")
 #else  /* defined (_M_X64) || defined (_M_ARM) */
 #error Unsupported platform

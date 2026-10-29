@@ -3,8 +3,8 @@ import 'package:code_assets/code_assets.dart';
 List<String> get frameworks => ['Foundation', 'SystemConfiguration'];
 
 List<String> getSystemLibraries(OS targetOS) => switch (targetOS) {
-  .android => ['log', 'z', 'c++_shared'],
-  .iOS || .macOS => ['z', 'pthread', 'dl', 'c++'],
+  .android => ['c++_shared', 'log', 'z'],
+  .iOS || .macOS => ['c++', 'z', 'pthread', 'dl'],
   .windows => [
     'ws2_32',
     'iphlpapi',
@@ -18,12 +18,15 @@ List<String> getSystemLibraries(OS targetOS) => switch (targetOS) {
     'ole32',
     'runtimeobject',
   ],
-  .linux => ['z', 'pthread', 'dl', 'stdc++'],
-  _ => [],
+  .linux => ['stdc++', 'z', 'pthread', 'dl'],
+  _ => throw UnsupportedError('Unsupported os: $targetOS'),
 };
 
-List<String> getOpensslLibraries(OS targetOS) =>
-    targetOS == .windows ? ['libcrypto', 'libssl'] : ['crypto', 'ssl'];
+List<String> getOpensslLibraries(OS targetOS) => switch (targetOS) {
+  .android || .iOS || .macOS || .linux => ['crypto', 'ssl'],
+  .windows => ['libcrypto', 'libssl'],
+  _ => throw UnsupportedError('Unsupported os: $targetOS'),
+};
 
 String getOpensslLibraryDirectory(
   Uri packageRoot,

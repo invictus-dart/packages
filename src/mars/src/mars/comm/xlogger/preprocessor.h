@@ -189,48 +189,8 @@
 #define PP_SIZE_(...)                   PP_EXPAND(PP_SIZE_I(__VA_ARGS__, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
 #define PP_SIZE_I(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, N, ...) N
 
-// PP_IS_EMPTY / PP_IS_BEGIN_PARENS
-// mars bridge: portable empty-argument detection for the conformant
-// preprocessor (MSVC /Zc:preprocessor, GCC, Clang). Same algorithm as
-// boost/preprocessor/facilities/is_empty_variadic.hpp (standard branch).
-#define PP_IBP_PRIMITIVE_CAT(a, ...) a ## __VA_ARGS__
-#define PP_IBP_CAT(a, ...) PP_IBP_PRIMITIVE_CAT(a, __VA_ARGS__)
-#define PP_IBP_SPLIT(i, ...) PP_IBP_PRIMITIVE_CAT(PP_IBP_SPLIT_, i)(__VA_ARGS__)
-#define PP_IBP_SPLIT_0(a, ...) a
-#define PP_IBP_SPLIT_1(a, ...) __VA_ARGS__
-#define PP_IBP_IS_VARIADIC_C(...) 1
-#define PP_IBP_IS_VARIADIC_R_1 1,
-#define PP_IBP_IS_VARIADIC_R_PP_IBP_IS_VARIADIC_C 0,
-#define PP_IS_BEGIN_PARENS(...) \
-    PP_IBP_SPLIT(0, PP_IBP_CAT(PP_IBP_IS_VARIADIC_R_, PP_IBP_IS_VARIADIC_C __VA_ARGS__))
-
-#define PP_DETAIL_IS_EMPTY_IIF_0(t, ...) __VA_ARGS__
-#define PP_DETAIL_IS_EMPTY_IIF_1(t, ...) t
-#define PP_DETAIL_IS_EMPTY_PRIMITIVE_CAT(a, b) a ## b
-#define PP_DETAIL_IS_EMPTY_IIF(bit) PP_DETAIL_IS_EMPTY_PRIMITIVE_CAT(PP_DETAIL_IS_EMPTY_IIF_, bit)
-#define PP_DETAIL_IS_EMPTY_PROCESS(...) PP_IS_BEGIN_PARENS(PP_DETAIL_IS_EMPTY_NON_FUNCTION_C __VA_ARGS__ ())
-#define PP_DETAIL_IS_EMPTY_NON_FUNCTION_C(...) ()
-#define PP_IS_EMPTY(...) \
-    PP_DETAIL_IS_EMPTY_IIF(PP_IS_BEGIN_PARENS(__VA_ARGS__)) \
-      (PP_IS_EMPTY_ZERO, PP_DETAIL_IS_EMPTY_PROCESS)(__VA_ARGS__)
-#define PP_IS_EMPTY_ZERO(...) 0
-
 // @deprecated, use PP_SIZE instead
-#if defined(_MSC_VER) && defined(_MSVC_TRADITIONAL) && _MSVC_TRADITIONAL
-// Traditional MSVC preprocessor: the (, __VA_ARGS__) counting hack already
-// yields 0 for an empty argument list, so the plain alias is correct.
 #define PP_NUM_PARAMS       PP_SIZE
-#else
-// mars bridge: under the conformant preprocessor (MSVC /Zc:preprocessor,
-// 19.5x+) the (, __VA_ARGS__) hack counts an empty / single-empty __VA_ARGS__
-// as 1, which mis-dispatches the TSF zero-argument log macros (xverbose2(),
-// xmessage2(), x*_function(), ...). Use an empty-aware count; legacy behavior
-// for 0/1 argument lists is preserved.
-#define PP_NUM_PARAMS(...) \
-    PP_IF(PP_SIZE(__VA_ARGS__), \
-          PP_IF(PP_DEC(PP_SIZE(__VA_ARGS__)), PP_SIZE(__VA_ARGS__), PP_NOT(PP_IS_EMPTY(__VA_ARGS__))), \
-          0)
-#endif
 #define PP_VARIADIC_SIZE    PP_SIZE
 
 // PP_ENUM

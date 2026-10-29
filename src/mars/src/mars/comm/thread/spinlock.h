@@ -80,7 +80,7 @@ class SpinLock {
 #endif
 
 #if defined(_WIN32)
-#if defined(_MSC_VER) && _MSC_VER >= 1310 && (defined(_M_ARM) || defined(_M_ARM64))
+#if defined(_MSC_VER) && _MSC_VER >= 1310 && (defined(_M_ARM))
 extern "C" void YieldProcessor();
 #else
 extern "C" void _mm_pause();
@@ -99,7 +99,7 @@ static inline void cpu_relax() {
     asm volatile("hint @pause" ::: "memory");
 
 #elif defined(_WIN32)
-#if defined(_MSC_VER) && _MSC_VER >= 1310 && (defined(_M_ARM) || defined(_M_ARM64))
+#if defined(_MSC_VER) && _MSC_VER >= 1310 && (defined(_M_ARM))
     YieldProcessor();
 #else
     _mm_pause();

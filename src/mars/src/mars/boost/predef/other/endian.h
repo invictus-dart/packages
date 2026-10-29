@@ -144,10 +144,7 @@ information and acquired knowledge:
         defined(__AARCH64EL__) || \
         defined(_MIPSEL) || \
         defined(__MIPSEL) || \
-        defined(__MIPSEL__) || \
-        (defined(_MSC_VER) && \
-            (defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64) || \
-             defined(_M_ARM) || defined(_M_ARM64)))
+        defined(__MIPSEL__)
 #       undef BOOST_ENDIAN_LITTLE_BYTE
 #       define BOOST_ENDIAN_LITTLE_BYTE BOOST_VERSION_NUMBER_AVAILABLE
 #   endif
