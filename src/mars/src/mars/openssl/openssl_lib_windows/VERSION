@@ -17,12 +17,16 @@ Mars modules are compiled with /MT (see hook/build.dart) to match upstream
 mars/comm/utils.cmake, so OpenSSL must use the static runtime as well to
 avoid MSVC CRT mismatch at link time.
 
-Debug symbols stripped 2026-10-29: the checked-in .lib files had debug
-symbols stripped with llvm-strip --strip-debug (OpenSSL's VC templates add
-/Zi and nasm -g by default; MSVC 19.51 does not honour /Zi- to disable it,
-so stripping the archive is the clean way to shrink the libs to match the
-upstream size profile). Verified after stripping: dumpbin /summary shows no
-.debug$S/.debug$T, and /MT link tests (x64+arm64, zlib) succeed with no
+Debug symbols retained 2026-10-30: the checked-in .lib files keep the
+original debug symbols (function symbols / line numbers live in each obj's
+.debug$S inside the .lib; MSVC writes /Zi types to a sidecar PDB while
+symbols stay in the obj — both upstream and our builds behave the same, so
+stripping was reverted to match upstream's debug profile). Each arch dir
+also ships the matching ossl_static.pdb (types-only, Has Types: true,
+no globals/publics — same structure as upstream's), taken from the same
+Conan build tree that produced the .lib (x64 2207744 B, arm64 2199552 B,
+x86 2191360 B). Verified: obj TypeServer2 GUID matches the PDB GUID per
+arch (8A22858B / 2D1BACBC / 0F44858E), and /MT link tests succeed with no
 VCRUNTIME/MSVCP dependencies.
 
 Build command (per arch, run inside a VS x64 dev shell with LLVM on PATH
@@ -34,7 +38,8 @@ for arm64 asm):
     -s:b os=Windows -s:b arch=armv8 -s:b compiler=msvc \
     -s:b compiler.version=195 -s:b compiler.runtime=dynamic \
     -s:b compiler.runtime_type=Release -s:b build_type=Release
-Then strip with: llvm-strip --strip-debug <libcrypto.lib> <libssl.lib>
+No post-build stripping: keep debug symbols and ship ossl_static.pdb
+(from b/src/ossl_static.pdb of the same Conan build) alongside the libs.
 
 Version policy: OpenSSL 3.5 is the current LTS release (supported until
 2030-04-08). OpenSSL 3.6 is NOT an LTS release (support ends 2026-11-01)
