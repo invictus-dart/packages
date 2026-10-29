@@ -1,20 +1,35 @@
 OpenSSL 3.5.9 (LTS)
 
-Prebuilt static libs from ConanCenter `openssl/3.5.9` (recipe rev
-e9977d17028841f6971240542d1f7b11), MSVC 194 / Release / static /
-compiler.runtime=dynamic:
+Prebuilt static libs built locally from source via Conan `openssl/3.5.9`
+(recipe rev e9977d17028841f6971240542d1f7b11), MSVC 195 / Release / static
+/ compiler.runtime=static (i.e. /MT):
 
-- arm64 (armv8): package 081a42677cf02160f44f9051851d2252bb19d85e
-  (package rev 6a33738db16cdb5b6391f22de3b7845a)
-- x64 (x86_64): package 28abdbfc5f7554635c526cc38d233f2beb62ab28
-  (package rev f42d0e22c45c5444df070ea85608034b)
+- arm64 (armv8): package 577f8200aa77f9cb2e3419022a74d0266213a49f
+  (no_asm=False; built 2026-10-29 with clang-cl from LLVM for ARM64 asm)
+- x64 (x86_64): package d31d4f52ff48524e357199f07ae106c8444fe942
+  (no_asm=False; built 2026-10-29)
+- x86 (ia32): package 2a9cab3080eae95c40aaa1d5e4b085d85dbda774
+  (no_asm=False; local cache build 2026-10-23)
+
+Why local builds: ConanCenter ships only compiler.runtime=dynamic prebuilts
+for 3.5.9; the static-runtime (/MT) variants must be compiled from source.
+Mars modules are compiled with /MT (see hook/build.dart) to match upstream
+mars/comm/utils.cmake, so OpenSSL must use the static runtime as well to
+avoid MSVC CRT mismatch at link time.
+
+Build command (per arch, run inside a VS x64 dev shell with LLVM on PATH
+for arm64 asm):
+  conan install --requires=openssl/3.5.9 --build=missing \
+    -s:h os=Windows -s:h arch=<armv8|x86_64|ia32> -s:h compiler=msvc \
+    -s:h compiler.version=195 -s:h compiler.runtime=static \
+    -s:h compiler.runtime_type=Release -s:h build_type=Release \
+    -s:b os=Windows -s:b arch=armv8 -s:b compiler=msvc \
+    -s:b compiler.version=195 -s:b compiler.runtime=dynamic \
+    -s:b compiler.runtime_type=Release -s:b build_type=Release
 
 Version policy: OpenSSL 3.5 is the current LTS release (supported until
 2030-04-08). OpenSSL 3.6 is NOT an LTS release (support ends 2026-11-01)
 and must not be used.
-
-x86 (ia32) is NOT included: ConanCenter ships no ia32 prebuilt for
-3.5.9; building for x86 requires compiling OpenSSL 3.5.9 from source.
 
 Headers: identical across archs except `configuration.h` (per-arch);
 the vendored tree uses a dispatcher (configuration.h) selecting

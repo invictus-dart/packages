@@ -19,11 +19,10 @@ void main(List<String> arguments) async {
     final flags = <String>[
       if (targetArchitecture == .arm) '-mthumb',
       if (targetOS == .windows) ...[
-        // Match upstream mars Windows builds (CMake/VS default) and the
-        // ConanCenter openssl/3.5.9 prebuilt libs (compiler.runtime=dynamic):
-        // both use the /MD runtime, so mars must not force /MT. The 10/26
-        // successful Windows build compiled all modules with /MD.
-        '/MP', '/MD',
+        // Match upstream mars Windows builds: mars/comm/utils.cmake replaces
+        // /MD with /MT in every MSVC flag, so all mars modules are compiled
+        // with the static MSVC runtime. Use /MT here for consistency.
+        '/MP', '/MT',
         // Upstream warning suppressions.
         '/wd4003', '/wd4819', '/wd4996', '/wd4244', '/wd4101',
         '/wd4200', '/wd4800', '/wd4005', '/wd4334',
@@ -144,7 +143,7 @@ void main(List<String> arguments) async {
         flags: targetOS == .windows
             ? const [
                 '/MP',
-                '/MD',
+                '/MT',
                 '/w',
                 '/W3',
                 '/GR',
