@@ -8,14 +8,14 @@ void main() {
     final logsDir = Directory.systemTemp.createTempSync('mars_test_log_');
     addTearDown(() => logsDir.deleteSync(recursive: true));
 
-    XLog.open(
+    xlog.open(
       logsDir: logsDir.path,
       cacheDir: logsDir.path,
       namePrefix: 'mars_test',
     );
-    XLog.info('mars_test', 'hello mars from dart');
-    XLog.flush(true);
-    XLog.close();
+    xlog.info('mars_test', 'hello mars from dart');
+    xlog.flush(true);
+    xlog.close();
 
     final logs = logsDir
         .listSync()

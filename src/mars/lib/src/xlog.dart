@@ -9,6 +9,8 @@ import 'package:ffi/ffi.dart' as ffi;
 
 import 'mars.g.dart' as ffi;
 
+final Xlog xlog = _XlogImpl();
+
 /// Appender mode, mirrors `mars::xlog::TAppenderMode`.
 enum AppenderMode {
   async(.kMarsAppenderAsync),
@@ -22,7 +24,7 @@ enum AppenderMode {
 }
 
 /// Log levels, mirrors `mars::TLogLevel`.
-enum XLogLevel {
+enum LogLevel {
   all(.kMarsLogLevelAll),
   verbose(.kMarsLogLevelVerbose),
   debug(.kMarsLogLevelDebug),
@@ -34,7 +36,7 @@ enum XLogLevel {
 
   final ffi.MarsLogLevel _level;
 
-  const XLogLevel(this._level);
+  const LogLevel(this._level);
 
   int get value => _level.value;
 }
@@ -67,10 +69,50 @@ enum CompressLevel {
   const CompressLevel(this.value);
 }
 
-abstract final class XLog {
-  static void open({
+abstract base class Xlog {
+  Xlog.impl();
+
+  void open({
     AppenderMode mode = .async,
-    XLogLevel level = .all,
+    LogLevel level = .all,
+    required String logsDir,
+    required String cacheDir,
+    int cacheDays = 0,
+    String namePrefix = '',
+    CompressMode compressMode = CompressMode.zlib,
+    CompressLevel compressLevel = CompressLevel.level6,
+    String pubKey = '',
+    bool useConsole = false,
+    int maxFileSize = 0,
+    int maxAliveDuration = 10 * 24 * 60 * 60,
+  });
+
+  void flush(bool isSync);
+
+  void close();
+
+  void write(LogLevel level, String tag, String message);
+
+  void verbose(String tag, String message) => write(.verbose, tag, message);
+
+  void debug(String tag, String message) => write(.debug, tag, message);
+
+  void info(String tag, String message) => write(.info, tag, message);
+
+  void warning(String tag, String message) => write(.warn, tag, message);
+
+  void error(String tag, String message) => write(.error, tag, message);
+
+  void fatal(String tag, String message) => write(.fatal, tag, message);
+}
+
+final class _XlogImpl extends Xlog {
+  _XlogImpl() : super.impl();
+
+  @override
+  void open({
+    AppenderMode mode = .async,
+    LogLevel level = .all,
     required String logsDir,
     required String cacheDir,
     int cacheDays = 0,
@@ -98,13 +140,16 @@ abstract final class XLog {
     );
   }
 
-  static void flush(bool isSync) => isSync
+  @override
+  void flush(bool isSync) => isSync
       ? ffi.mars_xlog_appender_flush_sync()
       : ffi.mars_xlog_appender_flush();
 
-  static void close() => ffi.mars_xlog_appender_close();
+  @override
+  void close() => ffi.mars_xlog_appender_close();
 
-  static void write(XLogLevel level, String tag, String message) {
+  @override
+  void write(LogLevel level, String tag, String message) {
     final isEnabled = ffi.mars_xlog_xlogger_is_enabled_for(level.value) != 0;
     if (!isEnabled) return;
     ffi.mars_xlog_xlogger_write(
@@ -116,17 +161,4 @@ abstract final class XLog {
       message.toNativeUtf8().cast(),
     );
   }
-
-  static void verbose(String tag, String message) =>
-      write(.verbose, tag, message);
-
-  static void debug(String tag, String message) => write(.debug, tag, message);
-
-  static void info(String tag, String message) => write(.info, tag, message);
-
-  static void warning(String tag, String message) => write(.warn, tag, message);
-
-  static void error(String tag, String message) => write(.error, tag, message);
-
-  static void fatal(String tag, String message) => write(.fatal, tag, message);
 }

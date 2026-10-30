@@ -7,7 +7,7 @@ void main() async {
   final filesDir = await path.getApplicationSupportDirectory();
   final logsDir = path.join(filesDir.path, 'logs');
   final cacheDir = path.join(logsDir, 'cache');
-  XLog.open(logsDir: logsDir, cacheDir: cacheDir);
+  xlog.open(logsDir: logsDir, cacheDir: cacheDir);
   runApp(const MyApp());
 }
 
@@ -22,8 +22,8 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    XLog.info('MyApp', 'INFO');
-    XLog.flush(true);
+    xlog.info('MyApp', 'INFO');
+    xlog.flush(true);
   }
 
   @override
