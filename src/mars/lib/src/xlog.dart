@@ -4,12 +4,12 @@
 // `src/mars.h` (bindings in `mars_bindings_generated.dart`).
 
 import 'dart:ffi' as ffi;
+import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart' as ffi;
 
 import 'mars.g.dart' as ffi;
-
-final Xlog xlog = _XlogImpl();
 
 /// Appender mode, mirrors `mars::xlog::TAppenderMode`.
 enum AppenderMode {
@@ -21,24 +21,6 @@ enum AppenderMode {
   const AppenderMode(this._mode);
 
   int get value => _mode.value;
-}
-
-/// Log levels, mirrors `mars::TLogLevel`.
-enum LogLevel {
-  all(.kMarsLogLevelAll),
-  verbose(.kMarsLogLevelVerbose),
-  debug(.kMarsLogLevelDebug),
-  info(.kMarsLogLevelInfo),
-  warn(.kMarsLogLevelWarn),
-  error(.kMarsLogLevelError),
-  fatal(.kMarsLogLevelFatal),
-  none(.kMarsLogLevelNone);
-
-  final ffi.MarsLogLevel _level;
-
-  const LogLevel(this._level);
-
-  int get value => _level.value;
 }
 
 /// Compress mode, mirrors `mars::xlog::TCompressMode`.
@@ -69,7 +51,33 @@ enum CompressLevel {
   const CompressLevel(this.value);
 }
 
+/// Log levels, mirrors `mars::TLogLevel`.
+enum LogLevel {
+  all(.kMarsLogLevelAll),
+  verbose(.kMarsLogLevelVerbose),
+  debug(.kMarsLogLevelDebug),
+  info(.kMarsLogLevelInfo),
+  warn(.kMarsLogLevelWarn),
+  error(.kMarsLogLevelError),
+  fatal(.kMarsLogLevelFatal),
+  none(.kMarsLogLevelNone);
+
+  final ffi.MarsLogLevel _level;
+
+  const LogLevel(this._level);
+
+  int get value => _level.value;
+}
+
 abstract base class Xlog {
+  static Xlog? _instance;
+
+  static Xlog get instance {
+    var instance = _instance;
+    if (instance == null) _instance = instance = _XlogImpl();
+    return instance;
+  }
+
   Xlog.impl();
 
   void open({
@@ -78,10 +86,10 @@ abstract base class Xlog {
     required String logsDir,
     required String cacheDir,
     int cacheDays = 0,
-    String namePrefix = '',
+    String? namePrefix,
     CompressMode compressMode = CompressMode.zlib,
     CompressLevel compressLevel = CompressLevel.level6,
-    String pubKey = '',
+    String? pubKey,
     bool useConsole = false,
     int maxFileSize = 0,
     int maxAliveDuration = 10 * 24 * 60 * 60,
@@ -104,6 +112,8 @@ abstract base class Xlog {
   void error(String tag, String message) => write(.error, tag, message);
 
   void fatal(String tag, String message) => write(.fatal, tag, message);
+
+  Future<Uint8List> decode(Uint8List input, {String? privKey});
 }
 
 final class _XlogImpl extends Xlog {
@@ -116,10 +126,10 @@ final class _XlogImpl extends Xlog {
     required String logsDir,
     required String cacheDir,
     int cacheDays = 0,
-    String namePrefix = '',
+    String? namePrefix,
     CompressMode compressMode = CompressMode.zlib,
     CompressLevel compressLevel = CompressLevel.level6,
-    String pubKey = '',
+    String? pubKey,
     bool useConsole = false,
     int maxFileSize = 0,
     int maxAliveDuration = 10 * 24 * 60 * 60,
@@ -133,10 +143,10 @@ final class _XlogImpl extends Xlog {
       logsDir.toNativeUtf8().cast(),
       cacheDir.toNativeUtf8().cast(),
       cacheDays,
-      namePrefix.toNativeUtf8().cast(),
+      namePrefix?.toNativeUtf8().cast() ?? ffi.nullptr,
       compressMode.value,
       compressLevel.value,
-      pubKey.toNativeUtf8().cast(),
+      pubKey?.toNativeUtf8().cast() ?? ffi.nullptr,
     );
   }
 
@@ -161,4 +171,30 @@ final class _XlogImpl extends Xlog {
       message.toNativeUtf8().cast(),
     );
   }
+
+  @override
+  Future<Uint8List> decode(Uint8List input, {String? privKey}) => Isolate.run(
+    () => ffi.using((arena) {
+      final inputPtr = arena<ffi.Uint8>(input.length);
+      inputPtr.asTypedList(input.length).setAll(0, input);
+      final bufferPtr = ffi.mars_create_buffer();
+      try {
+        var statusCode = ffi.mars_xlog_decode(
+          inputPtr.cast(),
+          input.length,
+          bufferPtr,
+          privKey?.toNativeUtf8().cast() ?? ffi.nullptr,
+        );
+        if (statusCode != 0) throw StateError('decode failed: $statusCode');
+        final size = ffi.mars_read_buffer(bufferPtr, ffi.nullptr, 0);
+        if (size < 0) throw StateError('decode failed: $size');
+        final outputPtr = arena<ffi.Uint8>(size);
+        statusCode = ffi.mars_read_buffer(bufferPtr, outputPtr.cast(), size);
+        if (statusCode != 0) throw StateError('decode failed: $statusCode');
+        return outputPtr.asTypedList(size);
+      } finally {
+        ffi.mars_free_buffer(bufferPtr);
+      }
+    }),
+  );
 }

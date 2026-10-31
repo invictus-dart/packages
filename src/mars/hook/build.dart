@@ -15,7 +15,7 @@ void main(List<String> arguments) async {
     final tencentParts = [
       CBuilder.library(
         name: 'zstd',
-        assetName: 'zstd.g.dart',
+        assetName: 'zstd_bindings_generated.dart',
         sources: [
           // lib/common.
           'src/mars/zstd/lib/common/debug.c',
@@ -77,7 +77,7 @@ void main(List<String> arguments) async {
       ),
       CBuilder.library(
         name: 'boost',
-        assetName: 'boost.g.dart',
+        assetName: 'boost_bindings_generated.dart',
         sources: [
           'src/mars/boost/libs/atomic/src/lockpool.cpp',
           'src/mars/boost/libs/date_time/src/gregorian/date_generators.cpp',
@@ -142,7 +142,7 @@ void main(List<String> arguments) async {
       ),
       CBuilder.library(
         name: 'comm1',
-        assetName: 'comm1.g.dart',
+        assetName: 'comm1_bindings_generated.dart',
         sources: [
           'src/mars/comm/alarm.cc',
           'src/mars/comm/anr.cc',
@@ -273,7 +273,7 @@ void main(List<String> arguments) async {
       ),
       CBuilder.library(
         name: 'comm2',
-        assetName: 'comm2.g.dart',
+        assetName: 'comm2_bindings_generated.dart',
         sources: [
           'src/mars/comm/adler32.c',
           'src/mars/comm/time_utils.c',
@@ -348,7 +348,7 @@ void main(List<String> arguments) async {
       ),
       CBuilder.library(
         name: 'boot',
-        assetName: 'boot.g.dart',
+        assetName: 'boot_bindings_generated.dart',
         sources: [
           // boot/src does not exist upstream; boot root only has context.cc.
           'src/mars/boot/context.cc',
@@ -377,7 +377,7 @@ void main(List<String> arguments) async {
       ),
       CBuilder.library(
         name: 'xlog1',
-        assetName: 'xlog1.g.dart',
+        assetName: 'xlog1_bindings_generated.dart',
         sources: [
           // appender_unittest.cc is a test and is excluded.
           'src/mars/xlog/src/appender.cc',
@@ -422,11 +422,19 @@ void main(List<String> arguments) async {
       ),
       CBuilder.library(
         name: 'xlog2',
-        assetName: 'xlog2.g.dart',
-        sources: ['src/mars/xlog/crypt/micro-ecc-master/uECC.c'],
+        assetName: 'xlog2_bindings_generated.dart',
+        sources: [
+          'src/mars/xlog/crypt/micro-ecc-master/uECC.c',
+          // 本地 xlog 日志解码器（vendored 树外的库化改编，源上游
+          // xlog/crypt/decode_log_file_c_impl/decode_log_file.c），由
+          // mars_xlog_decode FFI 桥接调用；依赖 micro-ecc/zstd/zlib 头。
+          'src/xlog/decode.c',
+        ],
         includes: [
           'src/mars/xlog/',
           'src/mars/xlog/src/',
+          // decode.c: "micro-ecc-master/uECC.h"。
+          'src/mars/xlog/crypt/',
           'src/',
           'src/mars/',
           'src/mars/comm/',
@@ -451,7 +459,7 @@ void main(List<String> arguments) async {
       ),
       CBuilder.library(
         name: 'baseevent',
-        assetName: 'baseevent.g.dart',
+        assetName: 'baseevent_bindings_generated.dart',
         sources: [
           'src/mars/baseevent/src/active_logic.cc',
           'src/mars/baseevent/src/baseprj.cc',
@@ -483,7 +491,7 @@ void main(List<String> arguments) async {
       ),
       CBuilder.library(
         name: 'app',
-        assetName: 'app.g.dart',
+        assetName: 'app_bindings_generated.dart',
         sources: [
           'src/mars/app/app_logic.cc',
           'src/mars/app/app_manager.cc',
@@ -519,7 +527,7 @@ void main(List<String> arguments) async {
       ),
       CBuilder.library(
         name: 'sdt',
-        assetName: 'sdt.g.dart',
+        assetName: 'sdt_bindings_generated.dart',
         sources: [
           'src/mars/sdt/sdt_logic.cc',
           'src/mars/sdt/sdt_manager.cc',
@@ -568,7 +576,7 @@ void main(List<String> arguments) async {
       ),
       CBuilder.library(
         name: 'stn',
-        assetName: 'stn.g.dart',
+        assetName: 'stn_bindings_generated.dart',
         sources: [
           'src/mars/stn/stn.cc',
           'src/mars/stn/stn_callback_bridge.cc',
@@ -644,7 +652,7 @@ void main(List<String> arguments) async {
 
     final builder = CBuilder.library(
       name: 'mars',
-      assetName: 'src/mars.g.dart',
+      assetName: 'src/mars_bindings_generated.dart',
       sources: [
         'src/mars.cpp',
         if (targetOS == .android) ...[

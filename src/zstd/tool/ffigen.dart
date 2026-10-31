@@ -17,7 +17,9 @@ void main(List<String> args) async {
           header.path.endsWith('zstd.h'),
     ),
     output: Output(
-      dart: DartOutput(path: rootUri.resolve('lib/src/zstd.g.dart')),
+      dart: DartOutput(
+        path: rootUri.resolve('lib/src/zstd_bindings_generated.dart'),
+      ),
     ),
     visitors: [
       Visitor(

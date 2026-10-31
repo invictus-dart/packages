@@ -5,6 +5,10 @@
 
 /// Mapping from Dart function name to native symbol name.
 const recordUseMapping = {
+  'mars_create_buffer': 'mars_create_buffer',
+  'mars_free_buffer': 'mars_free_buffer',
+  'mars_read_buffer': 'mars_read_buffer',
+  'mars_write_buffer': 'mars_write_buffer',
   'mars_xlog_appender_close': 'mars_xlog_appender_close',
   'mars_xlog_appender_flush': 'mars_xlog_appender_flush',
   'mars_xlog_appender_flush_sync': 'mars_xlog_appender_flush_sync',
@@ -14,6 +18,7 @@ const recordUseMapping = {
       'mars_xlog_appender_set_max_alive_duration',
   'mars_xlog_appender_set_max_file_size':
       'mars_xlog_appender_set_max_file_size',
+  'mars_xlog_decode': 'mars_xlog_decode',
   'mars_xlog_xlogger_is_enabled_for': 'mars_xlog_xlogger_is_enabled_for',
   'mars_xlog_xlogger_level': 'mars_xlog_xlogger_level',
   'mars_xlog_xlogger_set_level': 'mars_xlog_xlogger_set_level',

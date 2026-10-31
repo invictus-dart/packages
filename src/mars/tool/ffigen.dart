@@ -22,7 +22,9 @@ Future<void> main() async {
       include: (header) => header.path.endsWith('mars.h'),
     ),
     output: Output(
-      dart: DartOutput(path: rootUri.resolve('lib/src/mars.g.dart')),
+      dart: DartOutput(
+        path: rootUri.resolve('lib/src/mars_bindings_generated.dart'),
+      ),
       // Generates lib/src/mars_record_use_mapping.dart, a Dart-name to
       // native-symbol mapping consumed by hook/link.dart for treeshaking.
       recordUseMapping: rootUri.resolve('lib/src/mars_record_use_mapping.dart'),

@@ -37,7 +37,7 @@ void main(List<String> args) async {
     );
     final libraryAsset = CodeAsset(
       package: input.packageName,
-      name: 'src/zstd.g.dart',
+      name: 'src/zstd_bindings_generated.dart',
       linkMode: linkMode,
       file: outDir.resolve('$libraryDirName/$libraryName'),
     );

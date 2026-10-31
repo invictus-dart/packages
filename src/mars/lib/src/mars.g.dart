@@ -6,6 +6,34 @@ import 'dart:ffi' as ffi;
 import 'package:meta/meta.dart' as meta;
 
 @meta.RecordUse()
+@ffi.Native<ffi.Pointer<MarsBuffer> Function()>()
+external ffi.Pointer<MarsBuffer> mars_create_buffer();
+
+@meta.RecordUse()
+@ffi.Native<ffi.Void Function(ffi.Pointer<MarsBuffer>)>()
+external void mars_free_buffer(ffi.Pointer<MarsBuffer> buffer);
+
+@meta.RecordUse()
+@ffi.Native<
+  ffi.Size Function(ffi.Pointer<MarsBuffer>, ffi.Pointer<ffi.Char>, ffi.Size)
+>()
+external int mars_read_buffer(
+  ffi.Pointer<MarsBuffer> buffer,
+  ffi.Pointer<ffi.Char> output,
+  int size,
+);
+
+@meta.RecordUse()
+@ffi.Native<
+  ffi.Int Function(ffi.Pointer<MarsBuffer>, ffi.Pointer<ffi.Char>, ffi.Size)
+>()
+external int mars_write_buffer(
+  ffi.Pointer<MarsBuffer> buffer,
+  ffi.Pointer<ffi.Char> input,
+  int size,
+);
+
+@meta.RecordUse()
 @ffi.Native<ffi.Void Function()>()
 external void mars_xlog_appender_close();
 
@@ -54,6 +82,22 @@ external void mars_xlog_appender_set_max_alive_duration(int max_time_seconds);
 external void mars_xlog_appender_set_max_file_size(int max_byte_size);
 
 @meta.RecordUse()
+@ffi.Native<
+  ffi.Int Function(
+    ffi.Pointer<ffi.Char>,
+    ffi.Size,
+    ffi.Pointer<MarsBuffer>,
+    ffi.Pointer<ffi.Char>,
+  )
+>()
+external int mars_xlog_decode(
+  ffi.Pointer<ffi.Char> input,
+  int size,
+  ffi.Pointer<MarsBuffer> buffer,
+  ffi.Pointer<ffi.Char> priv_key,
+);
+
+@meta.RecordUse()
 @ffi.Native<ffi.Int Function(ffi.Int)>()
 external int mars_xlog_xlogger_is_enabled_for(int level);
 
@@ -98,6 +142,8 @@ enum MarsAppenderMode {
     _ => throw ArgumentError('Unknown value for MarsAppenderMode: $value'),
   };
 }
+
+final class MarsBuffer extends ffi.Opaque {}
 
 enum MarsCompressMode {
   kMarsCompressZlib(0),
