@@ -60,7 +60,10 @@ a future upstream sync can find and re-apply (or drop) each local fix:
    (review by searching the file for `Fix:`).
 
 3. **Regenerated build artifacts** (e.g. `comm/verinfo.h`) are not counted as
-   modifications; they carry locally generated values by design.
+   modifications for their generated values (they carry locally generated
+   values by design); the one deliberate edit inside `comm/verinfo.h`
+   (timestamp defines commented out, values injected by the build hook) is
+   listed in the table below.
 
 ### Current local fixes (vs upstream `a8c6c7d3`)
 
@@ -74,6 +77,7 @@ a future upstream sync can find and re-apply (or drop) each local fix:
 | `comm/xlogger/preprocessor.h` | `PP_SIZE` uses the standard implementation under the conforming MSVC preprocessor |
 | `xlog/crypt/decode_log_file_c_impl/decode_log_file.c` | zstd header path (`zstd/lib/zstd.h` → `zstd.h`) |
 | `xlog/src/log_zstd_buffer.cc`, `log_zstd_buffer.h` | `Flush()` now emits the zstd frame epilogue; zstd header path |
+| `comm/verinfo.h` | `MARS_BUILD_TIME` / `MARS_BUILD_TIMESTAMP` snapshot defines commented out; the build hook (`hook/build.dart`, xlog1 `CBuilder`) injects them as `-D` defines so every .xlog header records the actual compilation time |
 
 Header-only upgrades (whole-directory, not per-file fixes):
 `openssl/include/openssl/` → 3.5.9, `zstd/include/` → 1.5.7 (see above).

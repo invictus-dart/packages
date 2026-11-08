@@ -1,5 +1,6 @@
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
+import 'package:intl/intl.dart';
 import 'package:native_toolchain_x/native_toolchain_x.dart';
 
 import 'util.dart';
@@ -12,6 +13,14 @@ void main(List<String> arguments) async {
 
     final targetOS = input.config.code.targetOS;
     final targetArchitecture = input.config.code.targetArchitecture;
+
+    // MARS_BUILD_TIME / MARS_BUILD_TIMESTAMP are injected as defines so the
+    // .xlog header records the actual compilation time; the vendored
+    // mars/comm/verinfo.h no longer defines them (local fix, see
+    // src/mars/src/README.md). The quotes are part of the value because
+    // xlog/src/appender.cc concatenates the macro as a string literal.
+    final now = DateTime.now();
+    final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss', 'en_US');
 
     final opensslPart = OpensslBuilder();
     await opensslPart.run(input: input, output: output);
@@ -366,6 +375,10 @@ void main(List<String> arguments) async {
         defines: {
           ..._getUtilsDefines('xlog', targetOS, targetArchitecture),
           ..._getCMakeDefines(targetOS),
+          // Consumed by xlog/src/appender.cc (compiled into xlog1 only):
+          // written into the header of every .xlog file.
+          'MARS_BUILD_TIME': '"${dateFormat.format(now)}"',
+          'MARS_BUILD_TIMESTAMP': '${now.millisecondsSinceEpoch ~/ 1000}',
         },
         std: _getStd(targetOS),
         optimizationLevel: _getOptimizationLevel(targetOS),
