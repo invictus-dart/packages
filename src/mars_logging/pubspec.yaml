@@ -1,0 +1,19 @@
+name: mars_logging
+description: A starting point for Dart libraries or applications.
+version: 1.0.0
+# repository: https://github.com/invictus-dart/packages/tree/master/src/mars_logging
+topics:
+  - mars
+  - logging
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  mars: ^1.0.0
+  logging: ^1.3.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
