@@ -9,6 +9,8 @@ workspace:
   - src/zstd
   - src/mars
   - src/mars_logging
+  - src/mars_flutter
+  - src/mars_flutter/example
 
 hooks:
   user_defines:

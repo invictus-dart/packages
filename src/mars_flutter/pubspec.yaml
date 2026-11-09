@@ -1,0 +1,38 @@
+name: mars_flutter
+description: "A new Flutter plugin project."
+version: 1.0.0-dev.0
+repository: https://github.com/invictus-dart/packages/tree/master/src/mars_flutter
+topics:
+  - mars
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  mars: ^1.0.0-dev.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: dev.invictus_dart.mars_flutter
+        pluginClass: MarsFlutterPlugin
+      ios:
+        sharedDarwinSource: true
+        pluginClass: MarsFlutterPlugin
+      macos:
+        sharedDarwinSource: true
+        pluginClass: MarsFlutterPlugin
+      windows:
+        pluginClass: MarsFlutterPluginCApi
+      linux:
+        pluginClass: MarsFlutterPlugin
