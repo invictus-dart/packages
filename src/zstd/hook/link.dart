@@ -7,6 +7,8 @@ void main(List<String> arguments) async {
   await link(arguments, (input, output) async {
     if (!input.config.buildCodeAssets) return;
 
+    final treeShake = input.userDefines.getValue('tree_shake', true);
+
     final linker = CLinker.library(
       name: 'zstd',
       assetName: 'src/zstd_bindings_generated.dart',
@@ -20,11 +22,13 @@ void main(List<String> arguments) async {
     await linker.run(
       input: input,
       output: output,
-      linkerOptions: LinkerOptions.treeshake(
-        symbolsToKeep: input.recordedUses?.calls.keys.cast<Method>().map(
-          (e) => e.name,
-        ),
-      ),
+      linkerOptions: treeShake
+          ? LinkerOptions.treeshake(
+              symbolsToKeep: input.recordedUses?.calls.keys.cast<Method>().map(
+                (e) => e.name,
+              ),
+            )
+          : null,
     );
   });
 }
