@@ -42,11 +42,13 @@ final class OpensslBuilder implements Builder {
 
     final targetOS = input.config.code.targetOS;
     final targetSdk = targetOS == .iOS ? input.config.code.iOS.targetSdk : null;
-    final targetNdkApi = targetOS == .android
-        ? input.config.code.android.targetNdkApi
-        : null;
     final targetArchitecture = input.config.code.targetArchitecture;
 
+    final context = ToolResolvingContext(
+      logger: logger,
+      processManager: processManager,
+      fileSystem: fileSystem,
+    );
     final resolver = CompilerResolver(
       codeConfig: input.config.code,
       logger: logger,
@@ -64,7 +66,24 @@ final class OpensslBuilder implements Builder {
           ?Platform.environment['PATH'],
         ].join(OS.current == .windows ? ';' : ':'),
       },
-      .iOS || .macOS => <String, String>{},
+      .iOS => switch (targetSdk) {
+        .iPhoneOS => {
+          'SDKROOT': await iPhoneOSSdk
+              .resolve(context)
+              .then((e) => e.uri.toFilePath()),
+        },
+        .iPhoneSimulator => {
+          'SDKROOT': await iPhoneSimulatorSdk
+              .resolve(context)
+              .then((e) => e.uri.toFilePath()),
+        },
+        _ => throw UnsupportedError('Unsupported sdk: $targetSdk'),
+      },
+      .macOS => {
+        'SDKROOT': await macosxSdk
+            .resolve(context)
+            .then((e) => e.uri.toFilePath()),
+      },
       .windows => await resolver.resolveEnvironment(compiler),
       .linux => {'CC': compiler.uri.toFilePath()},
       _ => throw UnsupportedError('Unsupported os: $targetOS'),
@@ -74,7 +93,7 @@ final class OpensslBuilder implements Builder {
     final repositoryPart = RepositoryBuilder.tgz(url: url, sha256: sha256);
     await repositoryPart.run(input: input, output: output);
     // 2. Configure with Perl
-    final perl = await Tools.perl.resolve(logger: logger);
+    final perl = await Tools.perl.resolve(context);
     final target = switch (targetOS) {
       .android => switch (targetArchitecture) {
         .arm => 'android-arm',
@@ -137,7 +156,12 @@ final class OpensslBuilder implements Builder {
         'no-apps',
         'no-tests',
         'no-docs',
-        if (targetOS == .android) '-D__ANDROID_API__=$targetNdkApi',
+        if (targetOS == .android)
+          '-D__ANDROID_API__=${input.config.code.android.targetNdkApi}',
+        if (targetOS == .iOS)
+          '-mios-version-min=${input.config.code.iOS.deploymentVersion.major}',
+        if (targetOS == .macOS)
+          '-mmacos-version-min=${input.config.code.macOS.deploymentVersion.major}',
         '--prefix=${outDir.toFilePath()}',
         '--libdir=lib',
       ],
@@ -150,7 +174,7 @@ final class OpensslBuilder implements Builder {
     // 3. Compile with make/nmake
     final executable = targetOS == .windows
         ? compiler.uri.resolve('nmake.exe')
-        : await Tools.make.resolve(logger: logger).then((e) => e.uri);
+        : await Tools.make.resolve(context).then((e) => e.uri);
     await runProcess(
       executable: executable,
       arguments: [

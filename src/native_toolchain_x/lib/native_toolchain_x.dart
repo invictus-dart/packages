@@ -18,6 +18,13 @@ export 'src/cbuilder/output_type.dart' show OutputType;
 export 'src/utils/env_from_bat.dart';
 
 export 'src/cbuilder/compiler_resolver.dart';
+export 'src/native_toolchain/android_ndk.dart';
+export 'src/native_toolchain/apple_clang.dart';
+export 'src/native_toolchain/clang.dart';
+export 'src/native_toolchain/gcc.dart';
+export 'src/native_toolchain/msvc.dart';
+export 'src/native_toolchain/wsl.dart';
+export 'src/native_toolchain/xcode.dart';
 export 'src/tool/tool.dart';
 export 'src/tool/tool_error.dart';
 export 'src/tool/tool_instance.dart';

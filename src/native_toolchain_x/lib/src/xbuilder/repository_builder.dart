@@ -8,6 +8,7 @@ import 'package:logging/logging.dart';
 import 'package:process/process.dart';
 
 import '../utils/run_process.dart';
+import '../tool/tool_resolver.dart';
 import 'logger.dart';
 import 'tools.dart';
 
@@ -54,7 +55,12 @@ final class _TgzRepositoryBuilder extends RepositoryBuilder {
     processManager ??= const LocalProcessManager();
     fileSystem ??= const LocalFileSystem();
 
-    final tar = await Tools.tar.resolve(logger: logger);
+    final context = ToolResolvingContext(
+      logger: logger,
+      processManager: processManager,
+      fileSystem: fileSystem,
+    );
+    final tar = await Tools.tar.resolve(context);
 
     final dir = this.dir ?? input.outputDirectoryShared;
     await fileSystem.directory(dir).create(recursive: true);
@@ -124,7 +130,12 @@ final class _GitRepositoryBuilder extends RepositoryBuilder {
     processManager ??= const LocalProcessManager();
     fileSystem ??= const LocalFileSystem();
 
-    final git = await Tools.git.resolve(logger: logger);
+    final context = ToolResolvingContext(
+      logger: logger,
+      processManager: processManager,
+      fileSystem: fileSystem,
+    );
+    final git = await Tools.git.resolve(context);
 
     final dir = this.dir ?? input.outputDirectoryShared;
     await fileSystem.directory(dir).create(recursive: true);

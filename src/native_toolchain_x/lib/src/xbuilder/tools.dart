@@ -1,9 +1,4 @@
-import 'package:file/file.dart';
-import 'package:logging/logging.dart';
-import 'package:process/process.dart';
-
 import '../tool/tool.dart';
-import '../tool/tool_error.dart';
 import '../tool/tool_instance.dart';
 import '../tool/tool_resolver.dart';
 
@@ -64,25 +59,10 @@ abstract final class Tools {
 }
 
 extension ToolExt on Tool {
-  Future<ToolInstance> resolve({
-    required Logger? logger,
-    ProcessManager? processManager,
-    FileSystem? fileSystem,
-  }) async {
-    final context = ToolResolvingContext(
-      logger: logger,
-      processManager: processManager,
-      fileSystem: fileSystem,
-    );
-    final resolved = (await defaultResolver!.resolve(
-      context,
-    )).where((i) => i.tool == this).toList()..sort();
-    final result = resolved.firstOrNull;
-    if (result == null) {
-      final errorMessage = '$name is not found';
-      logger?.severe(errorMessage);
-      throw ToolError(errorMessage);
-    }
-    return result;
+  Future<ToolInstance> resolve(ToolResolvingContext context) async {
+    final resolver = ArgumentError.checkNotNull(defaultResolver, 'resolver');
+    final toolInstances = await resolver.resolve(context);
+    final toolInstance = toolInstances.firstWhere((e) => e.tool == this);
+    return toolInstance;
   }
 }

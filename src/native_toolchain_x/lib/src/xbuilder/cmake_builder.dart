@@ -10,6 +10,7 @@ import '../cbuilder/build_mode.dart';
 import '../cbuilder/compiler_resolver.dart';
 import '../tool/tool_error.dart';
 import '../tool/tool_instance.dart';
+import '../tool/tool_resolver.dart';
 import '../utils/run_process.dart';
 import 'logger.dart';
 import 'tools.dart';
@@ -51,7 +52,12 @@ final class CMakeBuilder implements Builder {
       return;
     }
 
-    final cmake = await Tools.cmake.resolve(logger: logger);
+    final context = ToolResolvingContext(
+      logger: logger,
+      processManager: processManager,
+      fileSystem: fileSystem,
+    );
+    final cmake = await Tools.cmake.resolve(context);
     final buildMode = this.buildMode.name.toCapitalCase();
 
     final subDir = this.subDir;
@@ -129,11 +135,11 @@ final class CMakeBuilder implements Builder {
       '-DCMAKE_SYSTEM_NAME=iOS',
       '-DCMAKE_OSX_SYSROOT=${codeConfig.iOS.targetSdk.type}',
       '-DCMAKE_OSX_ARCHITECTURES=${codeConfig.targetArchitecture.toDarwin()}',
-      '-DCMAKE_OSX_DEPLOYMENT_TARGET=${codeConfig.iOS.targetVersion}',
+      '-DCMAKE_OSX_DEPLOYMENT_TARGET=${codeConfig.iOS.deploymentVersion.major}',
     ],
     .macOS => [
       '-DCMAKE_OSX_ARCHITECTURES=${codeConfig.targetArchitecture.toDarwin()}',
-      '-DCMAKE_OSX_DEPLOYMENT_TARGET=${codeConfig.macOS.targetVersion}',
+      '-DCMAKE_OSX_DEPLOYMENT_TARGET=${codeConfig.macOS.deploymentVersion.major}',
     ],
     .windows => [
       '-DCMAKE_GENERATOR_PLATFORM=${codeConfig.targetArchitecture.toWindows()}',
