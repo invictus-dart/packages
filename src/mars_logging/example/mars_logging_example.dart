@@ -34,7 +34,7 @@ void main() async {
     logger.severe('A message with ${Level.SEVERE}', e, st);
     logger.shout('A message with ${Level.SHOUT}', e, st);
   }
-  await xlog.flushSync();
+  await xlog.flush();
   xlog.close();
 
   final date = DateTime.now();

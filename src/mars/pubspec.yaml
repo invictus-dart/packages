@@ -1,8 +1,9 @@
 name: mars
 description: >-
-  Mars is a cross-platform network component developed by WeChat.
-version: 1.0.0
-# repository: https://github.com/invictus-dart/packages/tree/master/src/mars
+  Dart FFI bindings for Mars, the cross-platform component library developed
+  by WeChat, built from vendored source via native assets build hooks.
+version: 1.0.0-dev.0
+repository: https://github.com/invictus-dart/packages/tree/master/src/mars
 topics:
   - mars
 resolution: workspace
@@ -13,7 +14,7 @@ environment:
 dependencies:
   hooks: ^2.0.0
   code_assets: ^2.1.0
-  native_toolchain_x: ^1.0.0
+  native_toolchain_x: ^1.0.0-dev.0
   logging: ^1.3.0
   file: ^7.0.1
   process: ^5.0.6

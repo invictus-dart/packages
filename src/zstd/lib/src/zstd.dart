@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ffi' as ffi;
 
@@ -9,16 +8,16 @@ import 'zstd_bindings_generated.dart' as ffi;
 
 part 'zstd_native.dart';
 
-/// An instance of the default implementation of the [ZstdCodec].
+/// An instance of [ZstdCodec] with the default compression level and no
+/// initial dictionary.
 final ZstdCodec zstd = ZstdCodec._default();
 
 /// The [ZstdCodec] encodes raw bytes to zstd compressed bytes and decodes zstd
 /// compressed bytes to raw bytes.
 final class ZstdCodec extends Codec<List<int>, List<int>> {
-  /// The compression-[level] can be set in the range of `-1..9`, with `6` being
-  /// the default compression level. Levels above `6` will have higher
-  /// compression rates at the cost of more CPU and memory usage. Levels below
-  /// `6` will use less CPU and memory at the cost of lower compression rates.
+  /// The compression level, from [ZstdOption.minLevel] to
+  /// [ZstdOption.maxLevel]; defaults to [ZstdOption.defaultLevel]. Higher levels
+  /// compress better at the cost of more CPU time and memory.
   final int level;
 
   /// Initial compression dictionary.
@@ -47,13 +46,12 @@ final class ZstdCodec extends Codec<List<int>, List<int>> {
   ZstdDecoder get decoder => ZstdDecoder(dictionary: dictionary);
 }
 
-/// The [ZstdEncoder] encoder is used by [ZstdCodec] and [GZipCodec] to compress
-/// data.
+/// The [ZstdEncoder] compresses data to zstd. It is returned by
+/// [ZstdCodec.encoder] and can also be constructed directly.
 final class ZstdEncoder extends Converter<List<int>, List<int>> {
-  /// The compression-[level] can be set in the range of `-1..9`, with `6` being
-  /// the default compression level. Levels above `6` will have higher
-  /// compression rates at the cost of more CPU and memory usage. Levels below
-  /// `6` will use less CPU and memory at the cost of lower compression rates.
+  /// The compression level, from [ZstdOption.minLevel] to
+  /// [ZstdOption.maxLevel]; defaults to [ZstdOption.defaultLevel]. Higher levels
+  /// compress better at the cost of more CPU time and memory.
   final int level;
 
   /// Initial compression dictionary.
@@ -97,7 +95,8 @@ final class ZstdEncoder extends Converter<List<int>, List<int>> {
   }
 }
 
-/// The [ZstdDecoder] is used by [ZstdCodec] and [GZipCodec] to decompress data.
+/// The [ZstdDecoder] decompresses zstd data. It is returned by
+/// [ZstdCodec.decoder] and can also be constructed directly.
 final class ZstdDecoder extends Converter<List<int>, List<int>> {
   /// Initial compression dictionary.
   ///

@@ -1,8 +1,10 @@
 name: native_toolchain_x
 description: >-
-  A library to invoke the native C compiler installed on the host machine.
-version: 1.0.0
-# repository: https://github.com/invictus-dart/packages/tree/master/src/native_toolchain_x
+  A library to invoke the native C compiler installed on the host machine, with
+  CMake and repository builders for building third-party sources in native
+  assets hooks.
+version: 1.0.0-dev.0
+repository: https://github.com/invictus-dart/packages/tree/master/src/native_toolchain_x
 topics:
   - compiler
   - ffi

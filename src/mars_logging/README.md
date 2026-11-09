@@ -1,39 +1,61 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# mars_logging
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+[![pub package](https://img.shields.io/pub/v/mars_logging.svg)](https://pub.dev/packages/mars_logging)
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/tools/pub/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+An integration which adds support for recording logs from the
+[`logging`](https://pub.dev/packages/logging) package into
+[Mars](https://pub.dev/packages/mars) XLog.
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+## Status: Experimental
 
-## Features
-
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+**NOTE**: This package is published as a development prerelease
+(`1.0.0-dev.4`) to solicit feedback. The API surface is expected to change —
+potentially in breaking ways — before the stable `1.0.0` release.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+Attach the integration once, typically at startup:
 
 ```dart
-const like = 'sample';
+import 'package:logging/logging.dart';
+import 'package:mars_logging/mars_logging.dart';
+
+void main() {
+  xlog.open(
+    logsDir: '/path/to/logs',
+    cacheDir: '/path/to/logs/cache',
+  );
+  Logger.root.onRecord.listen(xlog.onRecord);
+
+  Logger('MyApp').info('hello');
+  Logger('MyApp').severe('something failed', error, stackTrace);
+
+  xlog.close();
+}
 ```
 
-## Additional information
+### Level mapping
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+`package:logging` levels map to Mars log levels as:
+
+| `package:logging` | Mars XLog |
+| --- | --- |
+| `ALL` / `FINEST` / `FINER` / `FINE` | `verbose` |
+| `CONFIG` | `debug` |
+| `INFO` | `info` |
+| `WARNING` | `warn` |
+| `SEVERE` | `error` |
+| `SHOUT` | `fatal` |
+
+A record's `loggerName` becomes the xlog tag; `error` and `stackTrace`, when
+present, are appended to the message.
+
+See the [mars package](https://pub.dev/packages/mars) README for XLog
+configuration (compression, encryption, rotation), flushing, and offline
+decoding. A complete runnable example is available in
+[`example/mars_logging_example.dart`](example/mars_logging_example.dart).
+
+## Bugs and feedback
+
+Please file issues in the
+[bug tracker](https://github.com/invictus-dart/packages/issues).

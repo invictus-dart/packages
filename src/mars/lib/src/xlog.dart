@@ -87,7 +87,10 @@ enum LogLevel {
 ///
 /// Usage: call [open] once at startup, log with the level helpers
 /// ([verbose] … [fatal]), then [close] before process exit so buffered
-/// logs are flushed to disk.
+/// logs are flushed to disk. Blocking variants ([flushSync], [decodeSync])
+/// run on the calling thread; their non-suffixed counterparts ([flush],
+/// [decode]) run on a helper isolate and are safe to await from the UI
+/// isolate.
 ///
 /// ```dart
 /// xlog.open(logsDir: dir, cacheDir: dir);
@@ -134,19 +137,21 @@ abstract base class Xlog {
     int maxAliveDuration = 10 * 24 * 60 * 60,
   });
 
-  /// Asks the appender thread to write out buffered logs; returns
-  /// immediately, without waiting for the write to finish.
+  /// Flushes buffered logs to disk, blocking until they are written.
   ///
-  /// Use [flushSync] when logs must already be on disk at a given point.
-  void flush();
+  /// Compression and file writes run on the calling thread, so this can
+  /// take a significant amount of time; prefer [flush], which runs the same
+  /// blocking flush on a helper isolate. Logs written concurrently from
+  /// other code may or may not make it into this flush snapshot.
+  void flushSync();
 
   /// Flushes buffered logs to disk, waiting until they are written.
   ///
-  /// The blocking flush (compression and file write) runs on a helper
-  /// isolate, so `await`-ing it does not block the UI isolate. Logs written
+  /// The blocking flush ([flushSync]) runs on a helper isolate, so awaiting
+  /// this future does not block the calling isolate. Logs written
   /// concurrently from other code may or may not make it into this flush
-  /// snapshot; see [flush] for the non-blocking variant.
-  Future<void> flushSync();
+  /// snapshot; see [flushSync] for the synchronous variant.
+  Future<void> flush() => Isolate.run(() => flushSync());
 
   /// Closes the appender and merges cached logs into the final log files.
   ///
@@ -213,16 +218,25 @@ abstract base class Xlog {
     StackTrace? stackTrace,
   ]) => write(.fatal, tag, message, error, stackTrace);
 
-  /// Decodes a raw xlog log-file image back to plaintext.
+  /// Decodes a raw xlog log-file image back to plaintext, blocking the
+  /// calling thread while decoding.
   ///
   /// [input] is the byte content of a log file produced by [open] logging.
   /// [privKey] is the server ECDH private key (64 hex chars); when null,
   /// ECDH-encrypted segments are skipped with a placeholder and only the
   /// unencrypted parts are decoded.
   ///
-  /// Runs on a helper isolate. Returns the decoded plaintext bytes; throws
-  /// [StateError] when decoding fails.
-  Future<Uint8List> decode(Uint8List input, {String? privKey});
+  /// Returns the decoded plaintext bytes; throws [StateError] when decoding
+  /// fails. See [decode] for the non-blocking variant.
+  Uint8List decodeSync(Uint8List input, {String? privKey});
+
+  /// Decodes a raw xlog log-file image back to plaintext on a helper
+  /// isolate.
+  ///
+  /// See [decodeSync] for the parameters and failure behavior; awaiting the
+  /// returned future does not block the calling isolate.
+  Future<Uint8List> decode(Uint8List input, {String? privKey}) =>
+      Isolate.run(() => decodeSync(input, privKey: privKey));
 }
 
 final class _XlogImpl extends Xlog {
@@ -260,11 +274,7 @@ final class _XlogImpl extends Xlog {
   });
 
   @override
-  void flush() => ffi.mars_xlog_appender_flush();
-
-  @override
-  Future<void> flushSync() =>
-      Isolate.run(() => ffi.mars_xlog_appender_flush_sync());
+  void flushSync() => ffi.mars_xlog_appender_flush_sync();
 
   @override
   void close() => ffi.mars_xlog_appender_close();
@@ -304,34 +314,33 @@ final class _XlogImpl extends Xlog {
   });
 
   @override
-  Future<Uint8List> decode(Uint8List input, {String? privKey}) => Isolate.run(
-    () => ffi.using((arena) {
-      final inputPtr = arena<ffi.Uint8>(input.length);
-      inputPtr.asTypedList(input.length).setAll(0, input);
-      final bufferPtr = ffi.mars_create_buffer();
-      try {
-        final statusCode = ffi.mars_xlog_decode(
-          inputPtr.cast(),
-          input.length,
-          bufferPtr,
-          privKey?.toNativeUtf8().cast() ?? ffi.nullptr,
-        );
-        if (statusCode != 0) throw StateError('decode failed: $statusCode');
-        final expectedSize = ffi.mars_read_buffer(bufferPtr, ffi.nullptr, 0);
-        final outputPtr = arena<ffi.Uint8>(expectedSize);
-        final actualSize = ffi.mars_read_buffer(
-          bufferPtr,
-          outputPtr.cast(),
-          expectedSize,
-        );
-        if (actualSize != expectedSize) {
-          throw StateError('decode failed: $actualSize/$expectedSize');
+  Uint8List decodeSync(Uint8List input, {String? privKey}) =>
+      ffi.using((arena) {
+        final inputPtr = arena<ffi.Uint8>(input.length);
+        inputPtr.asTypedList(input.length).setAll(0, input);
+        final bufferPtr = ffi.mars_create_buffer();
+        try {
+          final statusCode = ffi.mars_xlog_decode(
+            inputPtr.cast(),
+            input.length,
+            bufferPtr,
+            privKey?.toNativeUtf8().cast() ?? ffi.nullptr,
+          );
+          if (statusCode != 0) throw StateError('decode failed: $statusCode');
+          final expectedSize = ffi.mars_read_buffer(bufferPtr, ffi.nullptr, 0);
+          final outputPtr = arena<ffi.Uint8>(expectedSize);
+          final actualSize = ffi.mars_read_buffer(
+            bufferPtr,
+            outputPtr.cast(),
+            expectedSize,
+          );
+          if (actualSize != expectedSize) {
+            throw StateError('decode failed: $actualSize/$expectedSize');
+          }
+          final output = outputPtr.asTypedList(expectedSize);
+          return Uint8List.fromList(output);
+        } finally {
+          ffi.mars_free_buffer(bufferPtr);
         }
-        final output = outputPtr.asTypedList(expectedSize);
-        return Uint8List.fromList(output);
-      } finally {
-        ffi.mars_free_buffer(bufferPtr);
-      }
-    }),
-  );
+      });
 }

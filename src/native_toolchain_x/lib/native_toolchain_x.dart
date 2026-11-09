@@ -2,7 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-/// A library to invoke the native C compiler installed on the host machine.
+/// A library to invoke the native C compiler installed on the host machine,
+/// together with builders for fetching and compiling third-party C/C++ sources
+/// from native assets build and link hooks.
 library;
 
 export 'src/cbuilder/build_mode.dart';

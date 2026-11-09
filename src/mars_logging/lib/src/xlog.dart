@@ -13,10 +13,9 @@ extension XlogIntegrationExt on Xlog {
   /// Writes [record] as one xlog entry.
   ///
   /// The record's `loggerName` becomes the xlog tag; [Level] maps to
-  /// [LogLevel] as SHOUT→fatal, SEVERE→error, WARNING→warning,
-  /// INFO→info, CONFIG→debug, and everything below (FINE/FINER/FINEST)
-  /// →verbose. `error` and `stackTrace`, when present, are appended to
-  /// the message.
+  /// [LogLevel] ascending as FINE/FINER/FINEST → verbose, CONFIG → debug,
+  /// INFO → info, WARNING → warn, SEVERE → error, SHOUT → fatal.
+  /// `error` and `stackTrace`, when present, are appended to the message.
   void onRecord(LogRecord record) {
     final level = switch (record.level) {
       < .CONFIG => LogLevel.verbose,

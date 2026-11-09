@@ -29,7 +29,7 @@ void main() async {
     xlog.error('mars', 'A message with ${LogLevel.error}', e, st);
     xlog.fatal('mars', 'A message with ${LogLevel.fatal}', e, st);
   }
-  await xlog.flushSync();
+  await xlog.flush();
   xlog.close();
 
   final date = DateTime.now();

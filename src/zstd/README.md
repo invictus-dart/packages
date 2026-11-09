@@ -1,39 +1,130 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# zstd
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+[![pub package](https://img.shields.io/pub/v/zstd.svg)](https://pub.dev/packages/zstd)
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/tools/pub/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+Dart bindings for [Zstandard](https://facebook.github.io/zstd/) (`zstd`), the
+fast lossless compression algorithm. The library is compiled from the official
+release sources through
+[native assets](https://dart.dev/tools/native-assets) build hooks, so nothing
+has to be installed or built by hand besides a C toolchain.
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+## Status: Experimental
+
+**NOTE**: This package is published as a development prerelease
+(`1.0.0-dev.0`) to solicit feedback. The API surface is expected to change —
+potentially in breaking ways — before the stable `1.0.0` release.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+- **Codec API** — `zstd.encode` / `zstd.decode` on the shared `zstd` instance,
+  or `ZstdCodec`, `ZstdEncoder`, and `ZstdDecoder` when a specific compression
+  level or dictionary is needed.
+- **Streaming** — `startChunkedConversion` converts chunks as they arrive
+  instead of buffering the whole input, and `RawZstdFilter` exposes the
+  low-level compress/decompress filter for finer control.
+- **Compression levels** validated against libzstd itself: `ZstdOption`
+  reports `minLevel`, `maxLevel`, and `defaultLevel`, and `ZstdCodec` /
+  `ZstdEncoder` reject out-of-range levels with a `RangeError`.
+- **Errors** surface as `ZstdError`, carrying the libzstd error code and the
+  matching error name.
+- **Static linking with tree-shaking** — the link hook trims the library down
+  to the symbols Dart actually calls, and can be told to keep everything.
 
 ## Getting started
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+- Dart SDK `^3.10.0` with native assets enabled (the default in recent SDKs).
+- A C toolchain, CMake, and `tar` for each target platform:
+  - Android: the Android NDK.
+  - iOS / macOS: Xcode.
+  - Windows: Visual Studio with the "Desktop development with C++" workload.
+  - Linux: `gcc`/`clang` and GNU `make`.
+
+The first build downloads the zstd 1.5.7 release tarball, verifies its SHA-256
+digest, and compiles it for the target — no system-wide zstd installation is
+used. The archive can be mirrored or replaced with a different release through
+`user_defines` (see [Configuration](#configuration)).
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
 ```dart
-const like = 'sample';
+import 'dart:convert';
+
+import 'package:zstd/zstd.dart';
+
+void main() {
+  final input = utf8.encode('hello hello hello hello hello');
+  final compressed = zstd.encode(input);
+  final decompressed = zstd.decode(compressed);
+  print(utf8.decode(decompressed));
+}
 ```
 
-## Additional information
+Pick a compression level, or share a dictionary between the encoder and the
+decoder:
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+```dart
+final codec = ZstdCodec(level: 9, dictionary: dictionaryBytes);
+final compressed = codec.encode(input);
+final decompressed = codec.decode(compressed);
+```
+
+A complete runnable example, including dictionary compression over a real JSON
+document, is available in [`example/zstd_example.dart`](example/zstd_example.dart).
+
+## Supported platforms
+
+| Target | Static linking (default) | Dynamic loading |
+| --- | --- | --- |
+| Android | `libzstd.a` | `libzstd.so` |
+| iOS | `libzstd.a` | `libzstd.dylib` |
+| macOS | `libzstd.a` | `libzstd.dylib` |
+| Linux | `libzstd.a` | `libzstd.so` |
+| Windows | `zstd_static.lib` | `zstd.dll` |
+
+With linking enabled the static library is linked into the app and the link
+hook decides which symbols survive. When the build config does not enable
+linking, a shared library is built and bundled instead
+(`BUILD_SHARED_LIBS=ON`, `ZSTD_BUILD_SHARED=ON`).
+
+## Build system
+
+`hook/build.dart` fetches and compiles zstd, `hook/link.dart` links it:
+
+1. `RepositoryBuilder.tgz` downloads the release archive into the shared build
+   directory and verifies the SHA-256 digest before extracting it.
+2. `CMakeBuilder` configures `build/cmake/` with `ZSTD_BUILD_PROGRAMS=OFF` and
+   builds static or shared according to the link mode, then installs it into
+   the output directory.
+3. The installed library is registered as a code asset under the bindings'
+   default FFI asset ID (`src/zstd_bindings_generated.dart`), so the
+   `@ffi.Native` declarations resolve without further configuration.
+4. `CLinker` statically links the code asset and tree-shakes it using the
+   symbols recorded from Dart (`record_use`), guided by
+   `lib/src/zstd_record_use_mapping.dart`.
+
+The bindings in `lib/src/zstd_bindings_generated.dart` are generated by
+`ffigen` (`dart run tool/ffigen.dart`) from the vendored headers in
+`src/include/`.
+
+## Configuration
+
+Build options are read from the `zstd` user defines, so a project can point the
+build at a mirror, a different zstd release, or turn off tree-shaking:
+
+```yaml
+hooks:
+  user_defines:
+    zstd:
+      url: https://gh-proxy.org/https://github.com/meta/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz
+      sha256: eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3
+      tree_shake: false
+```
+
+`url` and `sha256` must be changed together. Setting `tree_shake` to `false`
+skips the symbol trimming and keeps the whole library, which is the right
+choice when the library is also consumed by code Dart cannot see.
+
+## Bugs and feedback
+
+Please file issues in the
+[bug tracker](https://github.com/invictus-dart/packages/issues).
