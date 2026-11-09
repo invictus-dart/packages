@@ -9,6 +9,7 @@
   FINE/FINER/FINEST → verbose, CONFIG → debug, INFO → info, WARNING → warn,
   SEVERE → error, SHOUT → fatal, and `error` / `stackTrace` are appended to
   the message.
-- Re-exports the Mars XLog API from `package:mars` (`1.0.0-dev.0`).
+- Depends on `package:mars` (`^1.0.0-dev.0`); the Mars API is **not**
+  re-exported — import `package:mars` alongside this package.
 - Note: this is a prerelease — the API surface may change in breaking ways
   before 1.0.0.

@@ -72,6 +72,8 @@ Open the logger at startup, log through the shared [xlog] instance, flush or
 close before exit, and decode log files offline:
 
 ```dart
+import 'dart:io';
+
 import 'package:mars/mars.dart';
 
 void main() async {
@@ -92,7 +94,8 @@ void main() async {
   await xlog.flush(); // wait until buffered logs are on disk
   xlog.close();       // merge cached logs into final files
 
-  final plaintext = await xlog.decode(File('/path/to/log_20260101.xlog').readAsBytesSync());
+  final bytes = await File('/path/to/log_20260101.xlog').readAsBytes();
+  final plaintext = await xlog.decode(bytes);
 }
 ```
 

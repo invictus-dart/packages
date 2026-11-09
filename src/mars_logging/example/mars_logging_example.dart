@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:logging/logging.dart';
+import 'package:mars/mars.dart';
 import 'package:mars_logging/mars_logging.dart';
 
 void main() async {

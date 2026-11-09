@@ -2,7 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/mars_logging.svg)](https://pub.dev/packages/mars_logging)
 
-An integration which adds support for recording logs from the
+An integration which records logs from the
 [`logging`](https://pub.dev/packages/logging) package into
 [Mars](https://pub.dev/packages/mars) XLog.
 
@@ -14,10 +14,13 @@ potentially in breaking ways — before the stable `1.0.0` release.
 
 ## Usage
 
-Attach the integration once, typically at startup:
+Add both `mars` and `mars_logging` as dependencies. This package does **not**
+re-export the Mars API, so import `package:mars` alongside it to configure the
+logger; attach the integration once, typically at startup:
 
 ```dart
 import 'package:logging/logging.dart';
+import 'package:mars/mars.dart';
 import 'package:mars_logging/mars_logging.dart';
 
 void main() {

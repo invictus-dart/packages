@@ -1,11 +1,15 @@
 import 'package:logging/logging.dart';
 import 'package:mars/mars.dart';
 
-/// Bridges `package:logging` records to [Xlog].
+/// Bridges `package:logging` records to Mars XLog.
 ///
 /// Attach it once, typically at startup:
 ///
 /// ```dart
+/// import 'package:logging/logging.dart';
+/// import 'package:mars/mars.dart';
+/// import 'package:mars_logging/mars_logging.dart';
+///
 /// Logger.root.level = Level.ALL;
 /// Logger.root.onRecord.listen(xlog.onRecord);
 /// ```
