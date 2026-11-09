@@ -159,9 +159,9 @@ final class OpensslBuilder implements Builder {
         if (targetOS == .android)
           '-D__ANDROID_API__=${input.config.code.android.targetNdkApi}',
         if (targetOS == .iOS)
-          '-mios-version-min=${input.config.code.iOS.deploymentVersion.major}',
+          '-mios-version-min=${_appleDeploymentTarget(input.config.code.iOS.deploymentVersion)}',
         if (targetOS == .macOS)
-          '-mmacos-version-min=${input.config.code.macOS.deploymentVersion.major}',
+          '-mmacos-version-min=${_appleDeploymentTarget(input.config.code.macOS.deploymentVersion)}',
         '--prefix=${outDir.toFilePath()}',
         '--libdir=lib',
       ],
@@ -216,4 +216,13 @@ final class OpensslBuilder implements Builder {
       );
     }
   }
+}
+
+String _appleDeploymentTarget(AppleVersion version) {
+  final major = version.major;
+  final minor = version.minor;
+  final patch = version.patch;
+  if (patch != 0) return '$major.$minor.$patch';
+  if (minor != 0) return '$major.$minor';
+  return '$major';
 }

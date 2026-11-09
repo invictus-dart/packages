@@ -340,9 +340,10 @@ class VisualStudioResolver implements ToolResolver {
           '-requires',
           'Microsoft.VisualStudio.Component.VC.Tools.$pkgArchSuffix',
         ],
+        stdoutEncoding: utf8,
+        stderrEncoding: utf8,
         logger: logger,
         processManager: context.processManager,
-        encoding: utf8,
       );
       final instances = parseVswhere(
         vswhereResult.stdout,

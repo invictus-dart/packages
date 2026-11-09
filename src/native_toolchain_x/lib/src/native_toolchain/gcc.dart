@@ -119,7 +119,10 @@ Tool _gcc(String prefix) => Tool(
       PathToolResolver(toolName: gcc.name, executableName: '$prefix-gcc'),
       InstallLocationResolver(
         toolName: gcc.name,
-        paths: ['/opt/homebrew/bin/$prefix-gcc', '/usr/local/bin/$prefix-gcc'],
+        paths: [
+          '/opt/homebrew/bin/$prefix-gcc',
+          '/usr/local/bin/$prefix-gcc',
+        ],
       ),
     ]),
   ),

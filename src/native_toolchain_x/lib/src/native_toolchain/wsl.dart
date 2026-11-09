@@ -14,7 +14,10 @@ import '../utils/run_process.dart';
 
 final wsl = Tool(
   name: 'WSL',
-  defaultResolver: PathToolResolver(toolName: 'WSL', executableName: 'wsl'),
+  defaultResolver: PathToolResolver(
+    toolName: 'WSL',
+    executableName: 'wsl',
+  ),
 );
 
 /// Maps a Windows file [uri] to the path a tool running inside WSL can open.
