@@ -28,7 +28,6 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <string>
 
 #include "xlog/crypt/log_crypt.h"
 #include "xlog/crypt/log_magic_num.h"
@@ -58,53 +57,11 @@ LogZstdBuffer::~LogZstdBuffer() {
     }
 }
 
-// [invictus-dart local fix -- do not sync back to upstream Tencent/mars]
-// Upstream Flush() feeds ZSTD_e_end a zero-capacity output buffer and drops
-// the return value, so the frame epilogue is never emitted and every entry
-// is written to disk as an unterminated zstd frame (the read-side decoder
-// then has to guess the frame end). Fix: loop ZSTD_e_end into the remaining
-// buffer capacity until it returns 0 (frame complete), and push the appended
-// epilogue bytes through the same CryptAsyncLog/UpdateLogLen path that
-// LogBaseBuffer::Write() uses for ordinary compressed chunks, so encrypted
-// entries keep a well-formed header/payload/trailer structure.
 void LogZstdBuffer::Flush(AutoBuffer& _buff) {
-    if (is_compress_ && cctx_ != nullptr
-        && log_crypt_->GetLogLen((char*)buff_.Ptr(), buff_.Length()) != 0) {
+    if (is_compress_ && cctx_ != nullptr) {
         ZSTD_inBuffer input = {nullptr, 0, 0};
-
-        for (;;) {
-            size_t avail_out = buff_.MaxLength() - buff_.Length() - log_crypt_->GetTailerLen();
-            if (avail_out == 0) {
-                // No room left for the epilogue: degrade to upstream's
-                // behavior (unterminated frame) instead of truncating the
-                // already-written payload.
-                break;
-            }
-
-            size_t before_len = buff_.Length() - remain_nocrypt_len_;
-            ZSTD_outBuffer output = {buff_.PosPtr(), avail_out, 0};
-            size_t remaining = ZSTD_compressStream2(cctx_, &output, &input, ZSTD_e_end);
-
-            if (output.pos > 0) {
-                std::string out_buffer;
-                size_t last_remain_len = remain_nocrypt_len_;
-
-                log_crypt_->CryptAsyncLog((char*)buff_.Ptr() + before_len,
-                                          output.pos + remain_nocrypt_len_,
-                                          out_buffer,
-                                          remain_nocrypt_len_);
-
-                buff_.Write(out_buffer.data(), out_buffer.size(), before_len);
-                buff_.Length(before_len + out_buffer.size(), before_len + out_buffer.size());
-
-                log_crypt_->UpdateLogLen((char*)buff_.Ptr(),
-                                         (uint32_t)(out_buffer.size() - last_remain_len));
-            }
-
-            if (remaining == 0 || output.pos == 0) {
-                break;  // Frame complete, or no progress (cannot finish here).
-            }
-        }
+        ZSTD_outBuffer output = {nullptr, 0, 0};
+        ZSTD_compressStream2(cctx_, &output, &input, ZSTD_e_end);
     }
 
     LogBaseBuffer::Flush(_buff);
