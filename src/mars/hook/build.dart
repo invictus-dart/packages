@@ -794,6 +794,12 @@ List<String> _getExtraFlags(OS targetOS) => switch (targetOS) {
     '-Wno-error=unused-variable',
     '-Wno-error=missing-braces',
     '-Wno-error=tautological-type-limit-compare',
+    // NDK r28 clang deprecates the type-trait builtins used by the vendored
+    // boost (e.g. __has_trivial_destructor -> __is_trivially_destructible),
+    // and mars::comm uses std::binary_function (deprecated since C++11).
+    // Keep these as warnings instead of failing the upstream -Werror gate.
+    '-Wno-error=deprecated-builtins',
+    '-Wno-error=deprecated-declarations',
   ],
   .iOS || .macOS => [
     // The Apple branch of CMakeExtraFlags.txt has only commented-out
