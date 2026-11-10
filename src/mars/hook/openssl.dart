@@ -29,6 +29,8 @@ final class OpensslBuilder implements Builder {
     processManager ??= const LocalProcessManager();
     fileSystem ??= const LocalFileSystem();
 
+    if (!input.config.buildCodeAssets) return;
+
     final userDefines = input.userDefines.getValue('openssl', _userDefines);
     final url = userDefines['url'] as String;
     final sha256 = userDefines['sha256'] as String;

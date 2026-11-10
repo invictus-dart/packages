@@ -44,13 +44,7 @@ final class CMakeBuilder implements Builder {
     processManager ??= const LocalProcessManager();
     fileSystem ??= const LocalFileSystem();
 
-    if (!input.config.buildCodeAssets) {
-      logger.info(
-        'config.buildAssetTypes did not contain CodeAssets, '
-        'skipping CodeAsset ${input.packageName} build.',
-      );
-      return;
-    }
+    if (!input.config.buildCodeAssets) return;
 
     final context = ToolResolvingContext(
       logger: logger,

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:file/file.dart';
 import 'package:file/local.dart';
@@ -129,6 +130,8 @@ final class _GitRepositoryBuilder extends RepositoryBuilder {
     logger ??= createDefaultLogger('RepositoryBuilder');
     processManager ??= const LocalProcessManager();
     fileSystem ??= const LocalFileSystem();
+
+    if (!input.config.buildCodeAssets) return;
 
     final context = ToolResolvingContext(
       logger: logger,
