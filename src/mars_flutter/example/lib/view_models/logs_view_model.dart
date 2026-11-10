@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:clover/clover.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:mars_flutter/mars_flutter.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart' as path;
 
@@ -15,6 +16,7 @@ class LogsViewModel extends ViewModel {
   List<File> get logs => List.unmodifiable(_logs);
 
   void _updateLogs() async {
+    await xlog.flush();
     final filesDir = await path.getApplicationSupportDirectory();
     final logsPath = path.join(filesDir.path, 'logs');
     final logsDir = Directory(logsPath);
