@@ -32,6 +32,7 @@ export 'src/tool/tool_requirement.dart';
 export 'src/tool/tool_resolver.dart';
 export 'src/utils/run_process.dart';
 export 'src/xbuilder/cmake_builder.dart';
+export 'src/xbuilder/cpp_shared_builder.dart';
 export 'src/xbuilder/logger.dart';
 export 'src/xbuilder/repository_builder.dart';
 export 'src/xbuilder/tools.dart';

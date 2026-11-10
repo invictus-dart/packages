@@ -22,11 +22,11 @@ void main(List<String> arguments) async {
     final now = DateTime.now();
     final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss', 'en_US');
 
-    final opensslPart = OpensslBuilder();
-    await opensslPart.run(input: input, output: output);
-    final zstdPart = ZstdBuilder();
-    await zstdPart.run(input: input, output: output);
-    final tencentParts = [
+    final opensslBuilder = OpensslBuilder();
+    await opensslBuilder.run(input: input, output: output);
+    final zstdBuilder = ZstdBuilder();
+    await zstdBuilder.run(input: input, output: output);
+    final tencentBuilders = [
       CBuilder.library(
         name: 'boost',
         assetName: 'boost_bindings_generated.dart',
@@ -609,8 +609,8 @@ void main(List<String> arguments) async {
         optimizationLevel: _getOptimizationLevel(targetOS),
       ),
     ];
-    for (final tencentPart in tencentParts) {
-      await tencentPart.run(
+    for (final tencentBuilder in tencentBuilders) {
+      await tencentBuilder.run(
         input: input,
         output: output,
         routing: input.config.linkingEnabled
@@ -619,6 +619,8 @@ void main(List<String> arguments) async {
         linkModePreference: .static,
       );
     }
+    final cppSharedBuilder = CppSharedBuilder();
+    await cppSharedBuilder.run(input: input, output: output);
     final builder = CBuilder.library(
       name: 'mars',
       assetName: 'src/mars_bindings_generated.dart',
@@ -659,7 +661,7 @@ void main(List<String> arguments) async {
       libraries: [
         ...getOpensslLibraries(targetOS),
         ...getZstdLibraries(targetOS),
-        ...tencentParts.map((tencentPart) => tencentPart.name),
+        ...tencentBuilders.map((tencentPart) => tencentPart.name),
         ...getSystemLibraries(targetOS),
       ],
       libraryDirectories: ['.', 'openssl/out/lib', 'zstd/out/lib'],
