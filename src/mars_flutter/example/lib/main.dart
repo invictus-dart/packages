@@ -1,14 +1,11 @@
 import 'dart:async';
 
 import 'package:clover/clover.dart';
-import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
 import 'package:mars_flutter/mars_flutter.dart';
 import 'package:mars_logging/mars_logging.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart' as path;
 
 import 'view_models.dart';
 import 'views.dart';
@@ -18,23 +15,23 @@ void main() {
 }
 
 void onStartUp() async {
-  final filesDir = await path.getApplicationSupportDirectory();
-  final logsDir = path.join(filesDir.path, 'logs');
-  final cacheDir = path.join(filesDir.path, 'cache');
-  xlog.open(
-    mode: .async,
-    level: kDebugMode ? .debug : .info,
-    logsDir: logsDir,
-    cacheDir: cacheDir,
-    cacheDays: 0,
-    namePrefix: 'log',
-    compressMode: .zstd,
-    compressLevel: .level6,
-    pubKey: 'f3d382d0bd7e33356d8dc497e1f4b3f93f8d4f96d0fdddda66e4eaf9abb50564ce356990d7af20a47cccfb8c3e4b9070c9a56fad0ffd07d0114238b950a36abc',
-    useConsole: kDebugMode,
-    maxFileSize: 10 * 1024 * 1024,
-    maxAliveDuration: 30 * 24 * 60 * 60,
-  );
+  // final filesDir = await path.getApplicationSupportDirectory();
+  // final logsDir = path.join(filesDir.path, 'logs');
+  // final cacheDir = path.join(filesDir.path, 'cache');
+  // xlog.open(
+  //   mode: .async,
+  //   level: kDebugMode ? .debug : .info,
+  //   logsDir: logsDir,
+  //   cacheDir: cacheDir,
+  //   cacheDays: 0,
+  //   namePrefix: 'log',
+  //   compressMode: .zstd,
+  //   compressLevel: .level6,
+  //   pubKey: 'f3d382d0bd7e33356d8dc497e1f4b3f93f8d4f96d0fdddda66e4eaf9abb50564ce356990d7af20a47cccfb8c3e4b9070c9a56fad0ffd07d0114238b950a36abc',
+  //   useConsole: kDebugMode,
+  //   maxFileSize: 10 * 1024 * 1024,
+  //   maxAliveDuration: 30 * 24 * 60 * 60,
+  // );
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen(xlog.onRecord);
   runApp(MyApp());

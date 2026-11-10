@@ -644,7 +644,32 @@ void main(List<String> arguments) async {
         'src/mars.cpp',
         if (targetOS == .android) ...[
           'src/jni/import.cc',
-          'src/mars/libraries/mars_android_sdk/jni/JNI_OnLoad.cc',
+          // TODO(android): disabled on purpose - re-enable only together with
+          // the full mars Android Java SDK and its proguard keeps.
+          //
+          // JNI_OnLoad.cc is the entry that pulls mars's whole Java callback
+          // layer (comm / app / stn / sdt) into the loading path: its
+          // JNI_OnLoad eagerly walks every class registered by
+          // DEFINE_FIND_CLASS and every method registered by
+          // DEFINE_FIND_STATIC_METHOD / DEFINE_FIND_METHOD (see
+          // comm/jni/util/var_cache.cc), then calls jcache::init(). Any class
+          // or method that is missing, or whose signature does not match the
+          // Java side, makes VarCache throw UnsatisfiedLinkError and leave it
+          // pending; the next FindClass inside jcache::init() then trips
+          // ART's CheckJNI and aborts the process while System.loadLibrary()
+          // is still running.
+          //
+          // The upstream mars_android_sdk Java sources are incomplete and out
+          // of sync with the JNI side (e.g. StnLogic.resetAndInitEncoderVersion
+          // is declared as (I)V in Java but cached as (ILjava/lang/String;)V,
+          // and AppManager / StnManager / AlarmManager / ErrCmdType are not
+          // shipped at all), so that eager pass cannot succeed.
+          //
+          // Neither the dart:ffi path nor the xlog Java API needs it: the
+          // xlog natives are exported by JNI naming convention
+          // (Java_com_tencent_mars_xlog_Xlog_*), with no RegisterNatives and
+          // no VarCache involvement.
+          // 'src/mars/libraries/mars_android_sdk/jni/JNI_OnLoad.cc',
           'src/mars/libraries/mars_android_sdk/jni/longlink_packer.cc',
           'src/mars/libraries/mars_android_sdk/jni/shortlink_packer.cc',
         ],
