@@ -21,10 +21,14 @@
 #ifndef MMCOMM_SRC_SPECIAL_INI_H_
 #define MMCOMM_SRC_SPECIAL_INI_H_
 
+// [invictus-dart local fix -- do not sync back to upstream Tencent/mars]
+// The vendored OpenSSL headers were removed; they come from the Dart build
+// hooks' output include directory (see src/mars/src/README.md).
+#include <openssl/md5.h>
+
 #include "mars/comm/ini.h"
 #include "mars/comm/strutil.h"
 #include "mars/comm/xlogger/xlogger.h"
-#include "mars/openssl/include/openssl/md5.h"
 
 /**
  *	In order to allow the value of section is anything

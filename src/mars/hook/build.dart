@@ -24,8 +24,16 @@ void main(List<String> arguments) async {
 
     final opensslBuilder = OpensslBuilder();
     await opensslBuilder.run(input: input, output: output);
+    final opensslInclude = input.outputDirectory
+        .resolve('openssl/out/include')
+        .toFilePath();
+
     final zstdBuilder = ZstdBuilder();
     await zstdBuilder.run(input: input, output: output);
+    final zstdInclude = input.outputDirectory
+        .resolve('zstd/out/include')
+        .toFilePath();
+
     final tencentBuilders = [
       CBuilder.library(
         name: 'boost',
@@ -199,7 +207,7 @@ void main(List<String> arguments) async {
           'src/mars/comm/owl/',
           'src/',
           'src/mars/',
-          'src/mars/openssl/include/',
+          opensslInclude,
           if (targetOS == .windows) ...[
             'src/mars/comm/windows/',
             'src/mars/comm/windows/SocketSelect/',
@@ -279,7 +287,7 @@ void main(List<String> arguments) async {
           'src/mars/comm/owl/',
           'src/',
           'src/mars/',
-          'src/mars/openssl/include/',
+          opensslInclude,
           if (targetOS == .windows) ...[
             'src/mars/comm/windows/',
             'src/mars/comm/windows/SocketSelect/',
@@ -324,7 +332,7 @@ void main(List<String> arguments) async {
           'src/',
           'src/mars/',
           'src/mars/comm/',
-          'src/mars/openssl/include/',
+          opensslInclude,
           if (targetOS == .windows) 'src/mars/comm/windows/',
         ],
         forcedIncludes: _getForcedIncludes(targetOS),
@@ -367,8 +375,8 @@ void main(List<String> arguments) async {
           'src/mars/',
           'src/mars/comm/',
           'src/mars/comm/xlogger/',
-          'src/mars/openssl/include/',
-          'src/mars/zstd/include/',
+          opensslInclude,
+          zstdInclude,
           if (targetOS == .windows) ...[
             'src/mars/comm/windows/',
             'src/mars/comm/windows/zlib/',
@@ -412,8 +420,8 @@ void main(List<String> arguments) async {
           'src/mars/',
           'src/mars/comm/',
           'src/mars/comm/xlogger/',
-          'src/mars/openssl/include/',
-          'src/mars/zstd/include/',
+          opensslInclude,
+          zstdInclude,
           if (targetOS == .windows) ...[
             'src/mars/comm/windows/',
             'src/mars/comm/windows/zlib/',
@@ -448,7 +456,7 @@ void main(List<String> arguments) async {
           'src/',
           'src/mars/',
           'src/mars/comm/',
-          'src/mars/openssl/include/',
+          opensslInclude,
           if (targetOS == .windows) 'src/mars/comm/windows/',
         ],
         forcedIncludes: _getForcedIncludes(targetOS),
@@ -485,7 +493,7 @@ void main(List<String> arguments) async {
           'src/mars/',
           'src/mars/boot/',
           'src/mars/comm/',
-          'src/mars/openssl/include/',
+          opensslInclude,
           if (targetOS == .windows) 'src/mars/comm/windows/',
         ],
         forcedIncludes: _getForcedIncludes(targetOS),
@@ -535,7 +543,7 @@ void main(List<String> arguments) async {
           'src/mars/',
           'src/mars/boot/',
           'src/mars/comm/',
-          'src/mars/openssl/include/',
+          opensslInclude,
           if (targetOS == .windows) 'src/mars/comm/windows/',
         ],
         forcedIncludes: _getForcedIncludes(targetOS),
@@ -600,7 +608,7 @@ void main(List<String> arguments) async {
           'src/',
           'src/mars/',
           'src/mars/comm/',
-          'src/mars/openssl/include/',
+          opensslInclude,
           if (targetOS == .windows) 'src/mars/comm/windows/',
         ],
         forcedIncludes: _getForcedIncludes(targetOS),
@@ -628,8 +636,7 @@ void main(List<String> arguments) async {
         linkModePreference: .static,
       );
     }
-    final cppSharedBuilder = CppSharedBuilder();
-    await cppSharedBuilder.run(input: input, output: output);
+
     final builder = CBuilder.library(
       name: 'mars',
       assetName: 'src/mars_bindings_generated.dart',
@@ -685,6 +692,9 @@ void main(List<String> arguments) async {
           : [ToAppBundle()],
       linkModePreference: input.config.linkingEnabled ? .static : .dynamic,
     );
+
+    final cppSharedBuilder = CppSharedBuilder();
+    await cppSharedBuilder.run(input: input, output: output);
   });
 }
 

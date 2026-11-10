@@ -14,12 +14,15 @@
 #define THREAD_H_
 
 #include <errno.h>
+// [invictus-dart local fix -- do not sync back to upstream Tencent/mars]
+// The vendored OpenSSL headers were removed; they come from the Dart build
+// hooks' output include directory (see src/mars/src/README.md).
+#include <openssl/crypto.h>
 #include <stdlib.h>
 #include <xtimec.h>
 
 #include "assert/__assert.h"
 #include "condition.h"
-#include "mars/openssl/include/openssl/crypto.h"
 #include "thread/runnable.h"
 
 typedef HANDLE thread_handler;

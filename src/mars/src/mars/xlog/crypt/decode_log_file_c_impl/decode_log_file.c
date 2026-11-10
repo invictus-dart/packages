@@ -21,14 +21,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+// [invictus-dart local fix -- do not sync back to upstream Tencent/mars]
+// The vendored zstd sources were removed; the zstd headers come from the
+// Dart build hooks' output include directory (see src/mars/src/README.md).
+#include <zstd.h>
 
 #include "micro-ecc-master/uECC.h"
 #include "zlib.h"
-// [invictus-dart local fix -- do not sync back to upstream Tencent/mars]
-// The vendored zstd sources (zstd/lib/) were replaced by a headers-only copy
-// (zstd/include/); the static library is built from the official zstd
-// release by the Dart build hooks. Adjust the include path accordingly.
-#include "zstd.h"
 
 typedef enum { false, true } bool;
 

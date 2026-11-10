@@ -24,14 +24,29 @@ Notes:
   BUILD_TIME = local generation time). The verinfo.h checked into the upstream
   repository is a leftover from the previous release and gets overwritten at
   build time, so neither file counts as a source difference.
-- OpenSSL is deliberately upgraded to 3.5.9 (upstream: 1.1.1l) per project
-  rules.
-- zstd is deliberately upgraded to 1.5.7 (upstream: 1.4.4) per project rules:
-  the vendored zstd sources were removed and only the public headers are kept
-  under `zstd/include/zstd/` (mirroring `openssl/include/openssl/`); the
-  static library is built by `hook/zstd.dart` from the official release
-  tarball. The two `#include "zstd/lib/zstd.h"` sites were adjusted to
-  `#include "zstd.h"` (see the comments in those files).
+
+## Third-party libraries (OpenSSL, zstd)
+
+Upstream mars vendors its third-party dependencies inside the tree: OpenSSL
+1.1.1l headers under `openssl/include/` and zstd 1.4.4 sources under
+`zstd/lib/`. Per project rules both are upgraded here — OpenSSL to 3.5.9
+(latest LTS) and zstd to 1.5.7 (latest release) — and neither is vendored
+anymore: the static libraries are built from the official release tarballs
+by `hook/openssl.dart` and `hook/zstd.dart`, whose install steps put the
+headers next to the libraries in the hook output directory
+(`openssl/out/include/`, `zstd/out/include/`).
+
+`hook/build.dart` passes both `out/include` directories to the compilers as
+include directories, so the headers always come from the same build as the
+static libraries linked from the same output for the current target
+platform: there is no cross-platform header set to maintain, and upgrades
+need no manual header sync.
+
+The include statements that referenced the removed copies were switched to
+angle brackets — the convention for headers resolved from the external
+include path — and placed in sorted position within their include blocks
+(each site carries a `[invictus-dart local fix ...]` comment; see the table
+below). Headers that stay in-tree (zlib, micro-ecc) keep quoted includes.
 
 ## Modification comment format
 
@@ -73,27 +88,28 @@ a future upstream sync can find and re-apply (or drop) each local fix:
 | `boost/libs/thread/src/win32/tss_pe.cpp` | `_M_ARM64` missing from the `/alternatename` branch; matches boostorg/thread |
 | `boost/predef/architecture/arm.h` | `_M_ARM64` not detected; matches boostorg/predef |
 | `boost/preprocessor/config/config.hpp` | take the STRICT path under `/Zc:preprocessor` (`_MSVC_TRADITIONAL == 0`) |
+| `comm/shuffle.h` | OpenSSL include `mars/openssl/include/openssl/rand.h` → `<openssl/rand.h>` (see "Third-party libraries") |
+| `comm/strutil.cc` | OpenSSL include `openssl/md5.h` → `<openssl/md5.h>` (see "Third-party libraries") |
 | `comm/thread/spinlock.h` | `_M_ARM64` `cpu_relax()` uses `__yield()` (x86-only `_mm_pause` / macro `YieldProcessor` fail to link) |
-| `comm/xlogger/preprocessor.h` | `PP_SIZE` uses the standard implementation under the conforming MSVC preprocessor |
-| `xlog/crypt/decode_log_file_c_impl/decode_log_file.c` | zstd header path (`zstd/lib/zstd.h` → `zstd.h`) |
-| `xlog/src/log_zstd_buffer.cc`, `log_zstd_buffer.h` | `Flush()` now emits the zstd frame epilogue; zstd header path |
 | `comm/verinfo.h` | `MARS_BUILD_TIME` / `MARS_BUILD_TIMESTAMP` snapshot defines commented out; the build hook (`hook/build.dart`, xlog1 `CBuilder`) injects them as `-D` defines so every .xlog header records the actual compilation time |
+| `comm/windows/thread/thread.h` | OpenSSL include `mars/openssl/include/openssl/crypto.h` → `<openssl/crypto.h>` (see "Third-party libraries") |
+| `comm/xlogger/preprocessor.h` | `PP_SIZE` uses the standard implementation under the conforming MSVC preprocessor |
+| `stn/src/special_ini.h` | OpenSSL include `mars/openssl/include/openssl/md5.h` → `<openssl/md5.h>` (see "Third-party libraries") |
+| `xlog/crypt/decode_log_file_c_impl/decode_log_file.c` | zstd include `zstd/lib/zstd.h` → `<zstd.h>` (see "Third-party libraries") |
+| `xlog/src/log_zstd_buffer.h` | zstd include `zstd/lib/zstd.h` → `<zstd.h>` (see "Third-party libraries") |
 
-Header-only upgrades (whole-directory, not per-file fixes):
-`openssl/include/openssl/` → 3.5.9, `zstd/include/` → 1.5.7 (see above).
+Rows are sorted by path; every include-path row is a consequence of the
+third-party header strategy described above, not an independent fix.
 
 ## Intentional differences from upstream
 
 - Build system: upstream uses CMake + Python scripts; this repository uses
-  Dart hooks (`hook/build.dart` / `hook/link.dart`, native_toolchain_c).
+  Dart hooks (`hook/build.dart` / `hook/link.dart`, native_toolchain_x).
 - Artifacts: upstream Android builds two JNI libraries (marsstn.so /
   marsxlog.so); this repository builds a single `libmars.so` for Dart FFI,
   with the JNI sources compiled separately into `libjni.a`.
-- OpenSSL: upstream 1.1.1l; this repository 3.5.9 (latest LTS, per project
-  rules).
-- zstd: upstream 1.4.4; this repository 1.5.7 (latest release, per project
-  rules) — sources replaced by headers-only under `zstd/include/zstd/`, the
-  static library is built by `hook/zstd.dart` from the official tarball.
+- Third-party dependencies: OpenSSL 3.5.9 and zstd 1.5.7, built by the Dart
+  hooks and not vendored (see "Third-party libraries" above).
 - Source differences are tracked via `git diff` against the upstream branch;
   the module source lists match upstream (445 compilation units, excluding
   unittest/mock and JNI, which stay outside libmars).

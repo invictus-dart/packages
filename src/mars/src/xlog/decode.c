@@ -28,13 +28,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+// Fix: upstream includes "zstd/lib/zstd.h" from the vendored zstd sources;
+// the zstd headers come from the Dart build hooks' output include directory.
+#include <zstd.h>
 
 #include "decode.h"
 #include "micro-ecc-master/uECC.h"
 #include "zlib.h"
-// Fix: zstd headers-only copy (src/mars/zstd/include/); the static
-// library is built by the Dart build hooks from the official zstd release.
-#include "zstd.h"
 
 const int MAGIC_CRYPT_START = 0x01;
 const int MAGIC_COMPRESS_CRYPT_START = 0x02;

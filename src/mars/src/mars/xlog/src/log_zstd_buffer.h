@@ -23,15 +23,14 @@
 #include <stdint.h>
 
 #include <string>
+// [invictus-dart local fix -- do not sync back to upstream Tencent/mars]
+// The vendored zstd sources were removed; the zstd headers come from the
+// Dart build hooks' output include directory (see src/mars/src/README.md).
+#include <zstd.h>
 
 #include "log_base_buffer.h"
 #include "mars/comm/autobuffer.h"
 #include "mars/comm/ptrbuffer.h"
-// [invictus-dart local fix -- do not sync back to upstream Tencent/mars]
-// The vendored zstd sources (zstd/lib/) were replaced by a headers-only copy
-// (zstd/include/); the static library is built from the official zstd
-// release by the Dart build hooks. Adjust the include path accordingly.
-#include "zstd.h"
 
 namespace mars {
 namespace xlog {

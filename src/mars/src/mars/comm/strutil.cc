@@ -28,9 +28,12 @@
 
 #include <algorithm>
 #include <locale>
+// [invictus-dart local fix -- do not sync back to upstream Tencent/mars]
+// The vendored OpenSSL headers were removed; they come from the Dart build
+// hooks' output include directory (see src/mars/src/README.md).
+#include <openssl/md5.h>
 
 #include "comm/xlogger/xlogger.h"
-#include "openssl/md5.h"
 
 #ifdef WIN32
 #define snprintf _snprintf

@@ -1,9 +1,11 @@
 #pragma once
 #include <cstdlib>
 #include <iterator>
+// [invictus-dart local fix -- do not sync back to upstream Tencent/mars]
+// The vendored OpenSSL headers were removed; they come from the Dart build
+// hooks' output include directory (see src/mars/src/README.md).
+#include <openssl/rand.h>
 #include <utility>
-
-#include "mars/openssl/include/openssl/rand.h"
 
 namespace mars {
 namespace comm {
