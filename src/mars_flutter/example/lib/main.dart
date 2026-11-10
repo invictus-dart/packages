@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:clover/clover.dart';
-import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
 import 'package:mars_flutter/mars_flutter.dart';
@@ -98,7 +98,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoApp.router(routerConfig: routerConfig);
+    return MaterialApp.router(routerConfig: routerConfig);
   }
 
   @override
