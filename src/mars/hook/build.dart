@@ -295,10 +295,19 @@ void main(List<String> arguments) async {
           ..._getCMakeFlags(targetOS, targetArchitecture),
           ..._getMsvcStandardPreprocessorFlags(targetOS),
         ],
+        // No USING_XLOG_WEAK_FUNC here (upstream defines it for the whole
+        // comm target on Android, comm/CMakeLists.txt L117, but then
+        // recompiles xloggerbase.c inside the xlog target WITHOUT the
+        // define, xlog/CMakeLists.txt L52-54 — that second copy provides
+        // __xlogger_*_impl). This build links static archives, and weak
+        // references never pull an archive member in, so the xlog-side
+        // recompile has no equivalent here: the single copy of
+        // xloggerbase.c compiled in this module must keep the impl block.
+        // With the define, __xlogger_Write_impl stays an undefined weak
+        // symbol and xlogger_Write silently drops every record.
         defines: {
           ..._getUtilsDefines('comm', targetOS, targetArchitecture),
           ..._getCMakeDefines(targetOS),
-          if (targetOS == .android) 'USING_XLOG_WEAK_FUNC': null,
         },
         optimizationLevel: _getOptimizationLevel(targetOS),
       ),
