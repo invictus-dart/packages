@@ -24,8 +24,10 @@ can switch imports without other changes. On top of that it adds:
 - **`RepositoryBuilder`** — fetch third-party sources into the shared build
   directory, either as a release `.tar.gz` verified against a SHA-256 digest or
   as a Git checkout at a refspec.
-- **`Tools`** — resolve external build tools (`cmake`, `make`, `tar`, `git`,
-  `perl`, `nasm`) through the same resolver machinery used for compilers.
+- **`Tools`** — resolve external build tools (`cmake`, `make`, `jom`, `tar`,
+  `git`, `perl`, `nasm`) through the same resolver machinery used for compilers,
+  with `resolveOrNull` for callers that want to handle a missing tool
+  themselves.
 - An optional `encoding` on `runProcess`, so tool output is decoded correctly
   on hosts whose ANSI code page is not UTF-8.
 
@@ -66,6 +68,7 @@ The builders need the following tools available:
 | `tar` | `RepositoryBuilder.tgz` |
 | `git` | `RepositoryBuilder.git` |
 | `make`, `nasm`, `perl` | Third-party CMake projects that need them |
+| `jom` | Parallel `nmake`-style builds of OpenSSL on Windows (the `mars` hook) |
 
 ## Usage
 

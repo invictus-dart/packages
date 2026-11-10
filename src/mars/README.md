@@ -57,14 +57,38 @@ available on top of the C/C++ toolchain above:
 | Tool | Platform | Purpose |
 | --- | --- | --- |
 | Perl | all | runs `perl Configure` (Strawberry Perl on Windows, the system Perl elsewhere) |
-| `make` | Linux, macOS, Android targets | builds and installs OpenSSL (`nmake` is used only when targeting Windows) |
-| `nmake` | Windows | builds and installs OpenSSL; it ships with the Visual Studio C++ workload and is taken from the detected MSVC toolset |
 | NASM | Windows | OpenSSL's x86/x86_64 assembly routines; install it if Configure reports NASM missing |
-| `cmake`, `tar` | all | `cmake` builds zstd, `tar` extracts both release archives |
+| Jom | Windows | builds and installs OpenSSL in parallel (`/J <cores>`); the build fails if it is not on `PATH` |
+| Make | Linux, macOS, Android targets | builds and installs OpenSSL (`-j<cores>`) |
+| Tar | all | `tar` extracts both release archives |
+| CMake | all | `cmake` builds zstd |
 
 The tools must be on `PATH`. On Windows the MSVC environment is resolved
-through `vswhere`, and `nmake` is invoked from the same toolset directory as
-the compiler, so no Developer Command Prompt is required.
+through `vswhere`, so no Developer Command Prompt is required.
+
+### Why `jom` and not `nmake`
+
+Visual Studio's `nmake` has no parallel mode — `/J` and `-j` are absent from its
+option list — so it compiles OpenSSL's ~1,100 translation units one after
+another, which is what makes the Windows build take an order of magnitude
+longer than the macOS/Linux ones for identical sources. `jom`
+(<https://download.qt.io/official_releases/jom/jom.zip>, also bundled with Qt
+Creator) is an nmake-compatible make that adds `/J <n>`, and passes the job
+count down to the recursive `$(MAKE)` calls OpenSSL's makefile issues.
+
+While compiling with `jom`, the hook exports `CL=/FS` to the build process:
+OpenSSL's generated makefile passes `/Zi /Fdossl_static.pdb` to every `cl`
+invocation without `/FS`, and concurrent compiles would otherwise abort with
+`C1041: cannot open program database`. `/FS` routes PDB writes through
+`mspdbsrv` without patching the makefile or the vendored sources.
+
+OpenSSL is built with `jom /J <cores> build_libs` and then installed with
+`jom /J 1 install`. The install rules are not independent: `install_dev` and
+`install_runtime` both pull in `build_programs`/`build_libs`, whose recipes run
+the makefile's `depend` target, and `depend` rewrites `makefile` by renaming
+`makefile-<pid>` over it (`util/add-depends.pl`). Two concurrent instances
+therefore fail with `Permission denied` while the other one holds the makefile
+open, so the install is the one step that must stay serial.
 
 ## Usage
 

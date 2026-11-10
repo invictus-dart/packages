@@ -179,26 +179,55 @@ final class OpensslBuilder implements Builder {
       processManager: processManager,
       throwOnUnexpectedExitCode: true,
     );
-    // 3. Compile with make/nmake
-    final executable = targetOS == .windows
-        ? compiler.uri.resolve('nmake.exe')
-        : await Tools.make.resolve(context).then((e) => e.uri);
+    // 3. Compile in parallel: jom on Windows, GNU make everywhere else.
+    // nmake is not used on Windows because it has no parallel mode at all,
+    // which is what made the Windows build an order of magnitude slower than
+    // the macOS one for identical sources.
+    final tool = targetOS == .windows
+        ? await Tools.jom.resolve(context)
+        : await Tools.make.resolve(context);
     await runProcess(
-      executable: executable,
+      executable: tool.uri,
       arguments: [
-        if (targetOS != .windows) '-j${Platform.numberOfProcessors}',
+        // jom takes `/J <n>`, GNU make takes `-j<n>`. Both propagate the job
+        // count through MAKEFLAGS to the `$(MAKE) ... _build_libs` recursion
+        // OpenSSL's makefile performs, so the leaf compiler invocations run in
+        // parallel too.
+        ...targetOS == .windows
+            ? ['/J', '${Platform.numberOfProcessors}']
+            : ['-j${Platform.numberOfProcessors}'],
         'build_libs',
       ],
       workingDirectory: dstDir,
-      environment: environment,
+      environment: {
+        ...environment,
+        // OpenSSL's generated makefile passes the shared
+        // `/Zi /Fdossl_static.pdb` to every `cl` invocation without `/FS`, so
+        // parallel compiles collide on the same PDB and abort with C1041.
+        // `/FS` serialises PDB writes through mspdbsrv. `cl` reads `CL` from
+        // the environment, so this needs no change to the generated makefile
+        // or to the vendored sources.
+        if (targetOS == .windows)
+          'CL': {...?environment['CL']?.split(' '), '/FS'}.join(' '),
+      },
       logger: logger,
       processManager: processManager,
       throwOnUnexpectedExitCode: true,
     );
-    // 4. Install
+    // 4. Install. Serial on Windows: `jom` uses every core unless `/J` is
+    // given, and the install rules are not independent. Both `install_dev` and
+    // `install_runtime` pull in `build_programs`/`build_libs`, whose recipes
+    // run the makefile's `depend` target. `depend` rewrites `makefile` by
+    // renaming `makefile-<pid>` over it (`util/add-depends.pl`), and Windows
+    // refuses that rename while another jom instance still has the makefile
+    // open, which surfaces as `[depend] Error 13` from two parallel instances.
+    // `/J 1` runs those `depend` steps strictly one at a time.
     await runProcess(
-      executable: executable,
-      arguments: ['install'],
+      executable: tool.uri,
+      arguments: [
+        'install',
+        if (targetOS == .windows) ...['/J', '1'],
+      ],
       workingDirectory: dstDir,
       environment: environment,
       logger: logger,

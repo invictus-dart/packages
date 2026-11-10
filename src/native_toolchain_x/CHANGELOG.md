@@ -13,8 +13,11 @@
   (checks out a given refspec); both default to the shared build directory, so
   sources are reused across builds.
 - Added `Tools`, which resolves the external build tools used by the builders
-  (`cmake`, `make`, `tar`, `git`, `perl`, `nasm`) through the same tool
-  resolver machinery as the compilers.
+  (`cmake`, `make`, `jom`, `tar`, `git`, `perl`, `nasm`) through the same tool
+  resolver machinery as the compilers. `Tools.jom` lives on `PATH` and exposes
+  the `jom`/`nmake`-style make needed for parallel builds on Windows.
+- Added `ToolExt.resolveOrNull`, which returns `null` instead of throwing when a
+  tool is missing, so callers can report a targeted error.
 - Added `HookInputUserDefinesExt.getValue` for reading typed `user_defines`.
 - Added an optional `encoding` to `runProcess` and pinned MSVC output to UTF-8,
   so compiler diagnostics are decoded correctly on non-UTF-8 code pages.

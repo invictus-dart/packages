@@ -7,6 +7,8 @@
 - Third-party dependencies are built from official source tarballs: OpenSSL
   3.5.9 (latest LTS, upgraded from upstream 1.1.1l) and zstd 1.5.7 (upgraded
   from upstream 1.4.4).
+- OpenSSL is built in parallel on Windows with `jom /J <cores>` instead of
+  serial `nmake`; `jom` is therefore required on `PATH` for Windows builds.
 - XLog API (`lib/src/xlog.dart`):
   - `open` / `close` lifecycle with async or sync appender mode.
   - Level-filtered logging helpers (`verbose` … `fatal`) with tags and
