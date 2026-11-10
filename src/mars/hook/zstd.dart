@@ -33,6 +33,12 @@ final class ZstdBuilder implements Builder {
     final url = userDefines['url'] as String;
     final sha256 = userDefines['sha256'] as String;
     final tgzName = Uri.parse(url).pathSegments.last;
+    // TODO: The source directory name is inferred by stripping a hardcoded
+    // `.tar.gz` (7-char) suffix from the URL file name. This relies on the
+    // GitHub release tarball convention `<repo>-<tag>/` and breaks for other
+    // suffixes such as `.tgz` supplied via user defines. Derive the root
+    // directory from the extracted archive instead: use the single child
+    // directory of the extraction directory, or read the first tar entry name.
     final tgzDirectory = tgzName.substring(0, tgzName.length - 7);
     final srcDir = input.outputDirectoryShared.resolve('$tgzDirectory/');
     final dstDir = input.outputDirectory.resolve('zstd/dst/');
