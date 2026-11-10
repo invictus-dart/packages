@@ -169,7 +169,11 @@ bool isGoodLogBuffer(const char* buffer, size_t bufferSize, size_t offset, int c
     return true;
 }
 
-size_t getLogStartPos(const char* buffer, size_t bufferSize, int count) {
+// Fix: returns int64_t instead of size_t so the -1 "not found" sentinel is
+// compared as a plain signed value at call sites (size_t + -1 tripped
+// -Wsign-compare under -Werror on Android NDK clang). int64_t is lossless
+// for any offset within a size_t buffer on 32- and 64-bit targets.
+int64_t getLogStartPos(const char* buffer, size_t bufferSize, int count) {
     size_t offset = 0;
     while (1) {
         if (offset >= bufferSize) {
@@ -338,7 +342,7 @@ int decodeBuffer(const char* buffer, size_t bufferSize, size_t offset, char** ou
     }
 
     if (!isGoodLogBuffer(buffer, bufferSize, offset, 1)) {
-        size_t fixpos = getLogStartPos(buffer + offset, bufferSize - offset, 1);
+        int64_t fixpos = getLogStartPos(buffer + offset, bufferSize - offset, 1);
         if (-1 == fixpos) {
             return -1;
         } else {
@@ -506,8 +510,12 @@ int decodeBuffer(const char* buffer, size_t bufferSize, size_t offset, char** ou
             memcpy(tmpBuffer + i * TEA_BLOCK_LEN, tmp, TEA_BLOCK_LEN);
         }
 
-        char* decompBuffer;
-        size_t decompBufferSize;
+        // The outer branch guarantees buffer[offset] is MAGIC_ASYNC_ZLIB_START
+        // or MAGIC_ASYNC_ZSTD_START, so one of the paths below always assigns
+        // both; init defensively anyway (-Wsometimes-uninitialized fires under
+        // -Werror because clang cannot correlate the outer guard).
+        char* decompBuffer = NULL;
+        size_t decompBufferSize = 0;
         if (MAGIC_ASYNC_ZLIB_START == buffer[offset]) {
             if (!zlibDecompress(tmpBuffer, tmpBufferSize, &decompBuffer, &decompBufferSize)) {
                 fputs("Decompress error", stderr);
@@ -527,8 +535,10 @@ int decodeBuffer(const char* buffer, size_t bufferSize, size_t offset, char** ou
         tmpBufferSize = decompBufferSize;
     } else if (MAGIC_ASYNC_NO_CRYPT_ZLIB_START == buffer[offset] || MAGIC_ASYNC_NO_CRYPT_ZSTD_START == buffer[offset]) {
         memcpy(tmpBuffer, buffer + offset + headerLen, length);
-        char* decompBuffer;
-        size_t decompBufferSize;
+        // Same defensive init as the crypt-async branch above: the outer
+        // guard makes the if/else-if chain exhaustive.
+        char* decompBuffer = NULL;
+        size_t decompBufferSize = 0;
         if (MAGIC_ASYNC_NO_CRYPT_ZLIB_START == buffer[offset]) {
             if (!zlibDecompress(tmpBuffer, tmpBufferSize, &decompBuffer, &decompBufferSize)) {
                 fputs("Decompress error", stderr);
@@ -563,7 +573,7 @@ int decodeBuffer(const char* buffer, size_t bufferSize, size_t offset, char** ou
 }
 
 int decode(const char* buffer, size_t bufferSize, char** outBuffer, size_t* outBufferSize, const char* privKey) {
-    size_t startPos = getLogStartPos(buffer, bufferSize, 2);
+    int64_t startPos = getLogStartPos(buffer, bufferSize, 2);
     if (-1 == startPos) {
         return -1;
     }
