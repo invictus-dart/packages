@@ -10,11 +10,6 @@ List<String> get frameworks => [
 /// Platform system libraries linked into the mars dynamic library.
 List<String> getSystemLibraries(OS targetOS) => switch (targetOS) {
   .android => ['c++_shared', 'log', 'z'],
-  // resolv: comm/network/getdnssvraddrs.cc calls res_ninit/res_getservers/
-  // res_ndestroy on __APPLE__ (libresolv9.tbd in the upstream iOS/macOS wiki).
-  // The FFI bridge does not reference that code path today, so the symbols
-  // are not pulled from the static archives and the dylib links without it;
-  // the library must be present as soon as network APIs are exposed.
   .iOS || .macOS => ['c++', 'resolv', 'z'],
   .windows => [
     'ws2_32',
@@ -25,14 +20,8 @@ List<String> getSystemLibraries(OS targetOS) => switch (targetOS) {
     'crypt32',
     'user32',
     'gdi32',
-    'shell32',
-    'ole32',
     'runtimeobject',
   ],
-  // dl: required by OpenSSL on Linux (Configurations/10-main.conf L690,
-  // inherited by linux-x86_64): dso_scheme=dlfcn loads providers via
-  // dlopen (crypto/dso/dso_dlfcn.c). dlopen only lives in libc since
-  // glibc 2.34; older glibc needs -ldl explicitly.
   .linux => ['stdc++', 'z', 'pthread', 'dl'],
   _ => throw UnsupportedError('Unsupported os: $targetOS'),
 };
