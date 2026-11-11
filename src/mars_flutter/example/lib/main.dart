@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:clover/clover.dart';
 import 'package:flutter/foundation.dart';
@@ -57,12 +58,13 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   late final GoRouter routerConfig;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     routerConfig = GoRouter(
       routes: [
         GoRoute(
@@ -108,6 +110,17 @@ class _MyAppState extends State<MyApp> {
   @override
   void dispose() {
     routerConfig.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  // See https://api.flutter.dev/flutter/widgets/WidgetsBinding/handleRequestAppExit.html
+  @override
+  Future<AppExitResponse> didRequestAppExit() {
+    debugPrint('didRequestAppExit');
+    if (!Platform.isAndroid) {
+      xlog.close();
+    }
+    return super.didRequestAppExit();
   }
 }
