@@ -166,8 +166,10 @@ final class OpensslBuilder implements Builder {
         'no-docs',
         if (targetOS == .android)
           '-D__ANDROID_API__=${input.config.code.android.targetNdkApi}',
-        if (targetOS == .iOS)
+        if (targetOS == .iOS && targetSdk == .iPhoneOS)
           '-mios-version-min=${_appleDeploymentTarget(input.config.code.iOS.deploymentVersion)}',
+        if (targetOS == .iOS && targetSdk == .iPhoneSimulator)
+          '-mios-simulator-version-min=${_appleDeploymentTarget(input.config.code.iOS.deploymentVersion)}',
         if (targetOS == .macOS)
           '-mmacos-version-min=${_appleDeploymentTarget(input.config.code.macOS.deploymentVersion)}',
         '--prefix=${outDir.toFilePath()}',
