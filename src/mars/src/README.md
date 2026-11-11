@@ -32,7 +32,7 @@ Upstream mars vendors its third-party dependencies inside the tree: OpenSSL
 `zstd/lib/`. Per project rules both are upgraded here — OpenSSL to 3.5.9
 (latest LTS) and zstd to 1.5.7 (latest release) — and neither is vendored
 anymore: the static libraries are built from the official release tarballs
-by `hook/openssl.dart` and `hook/zstd.dart`, whose install steps put the
+by `lib/src/hook/openssl.dart` and `lib/src/hook/zstd.dart`, whose install steps put the
 headers next to the libraries in the hook output directory
 (`openssl/out/include/`, `zstd/out/include/`).
 

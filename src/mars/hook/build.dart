@@ -1,11 +1,10 @@
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
 import 'package:intl/intl.dart';
+import 'package:mars/src/hook/openssl.dart';
+import 'package:mars/src/hook/util.dart';
+import 'package:mars/src/hook/zstd.dart';
 import 'package:native_toolchain_x/native_toolchain_x.dart';
-
-import 'util.dart';
-import 'openssl.dart';
-import 'zstd.dart';
 
 void main(List<String> arguments) async {
   await build(arguments, (input, output) async {

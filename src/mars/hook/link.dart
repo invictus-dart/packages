@@ -1,9 +1,8 @@
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
+import 'package:mars/src/hook/util.dart';
 import 'package:native_toolchain_x/native_toolchain_x.dart';
 import 'package:record_use/record_use.dart';
-
-import 'util.dart';
 
 void main(List<String> arguments) async {
   await link(arguments, (input, output) async {
