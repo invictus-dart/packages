@@ -1,12 +1,21 @@
 import 'package:code_assets/code_assets.dart';
 
 /// Apple frameworks linked on iOS/macOS.
-List<String> get frameworks => ['Foundation', 'SystemConfiguration'];
+List<String> get frameworks => [
+  'Foundation',
+  'SystemConfiguration',
+  'CoreTelephony',
+];
 
 /// Platform system libraries linked into the mars dynamic library.
 List<String> getSystemLibraries(OS targetOS) => switch (targetOS) {
   .android => ['c++_shared', 'log', 'z'],
-  .iOS || .macOS => ['c++', 'z', 'pthread', 'dl'],
+  // resolv: comm/network/getdnssvraddrs.cc calls res_ninit/res_getservers/
+  // res_ndestroy on __APPLE__ (libresolv9.tbd in the upstream iOS/macOS wiki).
+  // The FFI bridge does not reference that code path today, so the symbols
+  // are not pulled from the static archives and the dylib links without it;
+  // the library must be present as soon as network APIs are exposed.
+  .iOS || .macOS => ['c++', 'z', 'resolv'],
   .windows => [
     'ws2_32',
     'iphlpapi',
@@ -20,7 +29,7 @@ List<String> getSystemLibraries(OS targetOS) => switch (targetOS) {
     'ole32',
     'runtimeobject',
   ],
-  .linux => ['stdc++', 'z', 'pthread', 'dl'],
+  .linux => ['stdc++', 'z', 'pthread'],
   _ => throw UnsupportedError('Unsupported os: $targetOS'),
 };
 
