@@ -24,4 +24,8 @@
 /// ```
 library;
 
+export 'src/appender_mode.dart';
+export 'src/compress_level.dart';
+export 'src/compress_mode.dart';
+export 'src/log_level.dart';
 export 'src/xlog.dart';

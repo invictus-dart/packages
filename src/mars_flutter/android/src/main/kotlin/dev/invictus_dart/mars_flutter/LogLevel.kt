@@ -1,14 +1,12 @@
 package dev.invictus_dart.mars_flutter
 
-import com.tencent.mars.xlog.Xlog
-
 enum class LogLevel(val value: Int) {
-    ALL(Xlog.LEVEL_ALL),
-    VERBOSE(Xlog.LEVEL_VERBOSE),
-    DEBUG(Xlog.LEVEL_DEBUG),
-    INFO(Xlog.LEVEL_INFO),
-    WARNING(Xlog.LEVEL_WARNING),
-    ERROR(Xlog.LEVEL_ERROR),
-    FATAL(Xlog.LEVEL_FATAL),
-    NONE(Xlog.LEVEL_NONE),
+    ALL(0),
+    VERBOSE(0),
+    DEBUG(1),
+    INFO(2),
+    WARN(3),
+    ERROR(4),
+    FATAL(5),
+    NONE(6),
 }

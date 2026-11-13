@@ -10,6 +10,10 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart' as ffi;
 import 'package:stack_trace/stack_trace.dart';
 
+import 'appender_mode.dart';
+import 'compress_level.dart';
+import 'compress_mode.dart';
+import 'log_level.dart';
 import 'mars_bindings_generated.dart' as ffi;
 
 /// The shared [Xlog] instance.
@@ -17,71 +21,6 @@ import 'mars_bindings_generated.dart' as ffi;
 /// Initialized lazily on first access; every access returns the same object
 /// within the current isolate.
 Xlog get xlog => Xlog._instance;
-
-/// Appender mode, mirrors `mars::xlog::TAppenderMode`.
-enum AppenderMode {
-  async(.kMarsAppenderAsync),
-  sync(.kMarsAppenderSync);
-
-  final ffi.MarsAppenderMode _mode;
-
-  const AppenderMode(this._mode);
-
-  /// The underlying native enum value.
-  int get value => _mode.value;
-}
-
-/// Compress mode, mirrors `mars::xlog::TCompressMode`.
-enum CompressMode {
-  zlib(.kMarsCompressZlib),
-  zstd(.kMarsCompressZstd);
-
-  final ffi.MarsCompressMode _mode;
-
-  const CompressMode(this._mode);
-
-  /// The underlying native enum value.
-  int get value => _mode.value;
-}
-
-/// Compression level for log files, 1 (fastest) to 9 (smallest output).
-///
-/// Valid for both [CompressMode.zlib] and [CompressMode.zstd]; the default
-/// [CompressLevel.level6] matches upstream Mars.
-enum CompressLevel {
-  level1(1),
-  level2(2),
-  level3(3),
-  level4(4),
-  level5(5),
-  level6(6),
-  level7(7),
-  level8(8),
-  level9(9);
-
-  final int value;
-
-  const CompressLevel(this.value);
-}
-
-/// Log levels, mirrors `mars::TLogLevel`.
-enum LogLevel {
-  all(.kMarsLogLevelAll),
-  verbose(.kMarsLogLevelVerbose),
-  debug(.kMarsLogLevelDebug),
-  info(.kMarsLogLevelInfo),
-  warn(.kMarsLogLevelWarn),
-  error(.kMarsLogLevelError),
-  fatal(.kMarsLogLevelFatal),
-  none(.kMarsLogLevelNone);
-
-  final ffi.MarsLogLevel _level;
-
-  const LogLevel(this._level);
-
-  /// The underlying native enum value.
-  int get value => _level.value;
-}
 
 /// Mars XLog logger.
 ///
@@ -129,8 +68,8 @@ abstract base class Xlog {
     required String cacheDir,
     int cacheDays = 0,
     String? namePrefix,
-    CompressMode compressMode = CompressMode.zlib,
-    CompressLevel compressLevel = CompressLevel.level6,
+    CompressMode compressMode = .zlib,
+    CompressLevel compressLevel = .level6,
     String? pubKey,
     bool useConsole = false,
     int maxFileSize = 0,

@@ -1,1 +1,2 @@
--keep class com.tencent.mars.** { *; }
+-keep class com.sun.jna.** { *; }
+-keep interface dev.invictus_dart.mars_flutter.MarsLibrary { *; }

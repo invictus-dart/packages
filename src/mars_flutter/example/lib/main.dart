@@ -9,11 +9,13 @@ import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
 import 'package:mars_flutter/mars_flutter.dart';
 import 'package:mars_logging/mars_logging.dart';
-import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart' as path;
 
 import 'view_models.dart';
 import 'views.dart';
+
+bool get initByNative =>
+    Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
 
 void main() {
   runZonedGuarded(onStartUp, onUncaughtError);
@@ -21,15 +23,16 @@ void main() {
 
 void onStartUp() async {
   // Xlog.open is called on native side on Android.
-  if (!Platform.isAndroid) {
+  if (!initByNative) {
     final filesDir = await path.getApplicationSupportDirectory();
-    final logsDir = path.join(filesDir.path, 'logs');
-    final cacheDir = path.join(filesDir.path, 'cache');
+    final filesUri = filesDir.uri;
+    final logsUri = filesUri.resolve('logs/');
+    final cacheUri = logsUri.resolve('cache/');
     xlog.open(
       mode: .async,
       level: kDebugMode ? .debug : .info,
-      logsDir: logsDir,
-      cacheDir: cacheDir,
+      logsDir: logsUri.toFilePath(),
+      cacheDir: cacheUri.toFilePath(),
       cacheDays: 0,
       namePrefix: 'log',
       compressMode: .zstd,
@@ -118,7 +121,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   Future<AppExitResponse> didRequestAppExit() {
     debugPrint('didRequestAppExit');
-    if (!Platform.isAndroid) {
+    if (!initByNative) {
       xlog.close();
     }
     return super.didRequestAppExit();

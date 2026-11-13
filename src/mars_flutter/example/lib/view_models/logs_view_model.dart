@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:clover/clover.dart';
+import 'package:collection/collection.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:mars_flutter/mars_flutter.dart';
 import 'package:path/path.dart' as path;
@@ -25,7 +26,11 @@ class LogsViewModel extends ViewModel {
       return;
     }
     final entities = await logsDir.list().toList();
-    _logs = entities.whereType<File>().toList();
+    _logs = entities
+        .whereType<File>()
+        .sortedBy((e) => e.path)
+        .reversed
+        .toList();
     notifyListeners();
   }
 

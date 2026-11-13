@@ -74,6 +74,8 @@ kotlin {
 }
 
 dependencies {
+    implementation("net.java.dev.jna:jna:5.19.1@aar")
+
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
 }
