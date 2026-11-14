@@ -5,19 +5,17 @@ environment:
   sdk: ^3.10.0
 
 workspace:
-  - src/native_toolchain_x
-  - src/zstd
+  - src/clover
+  - src/clover/example
   - src/mars
-  - src/mars_logging
   - src/mars_flutter
   - src/mars_flutter/example
+  - src/mars_logging
+  - src/native_toolchain_x
+  - src/zstd
 
 hooks:
   user_defines:
-    zstd:
-      url: https://gh-proxy.org/https://github.com/meta/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz
-      sha256: eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3
-      tree_shake: false
     mars:
       openssl:
         url: https://gh-proxy.org/https://github.com/openssl/openssl/releases/download/openssl-3.5.9/openssl-3.5.9.tar.gz
@@ -25,4 +23,8 @@ hooks:
       zstd:
         url: https://gh-proxy.org/https://github.com/meta/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz
         sha256: eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3
+      tree_shake: false
+    zstd:
+      url: https://gh-proxy.org/https://github.com/meta/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz
+      sha256: eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3
       tree_shake: false

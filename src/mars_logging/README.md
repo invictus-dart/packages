@@ -4,7 +4,7 @@
 
 An integration which records logs from the
 [`logging`](https://pub.dev/packages/logging) package into
-[Mars](https://pub.dev/packages/mars) XLog.
+[mars](https://pub.dev/packages/mars).
 
 ## Status: Experimental
 

@@ -1,6 +1,6 @@
 name: mars_logging
 description: >-
-  An integration which records logs from the logging package into Mars XLog.
+  An integration which records logs from the logging package into mars.
 version: 1.0.0-dev.4
 repository: https://github.com/invictus-dart/packages/tree/master/src/mars_logging
 topics:

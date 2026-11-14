@@ -1,5 +1,7 @@
 name: mars_flutter
-description: "A new Flutter plugin project."
+description: >-
+  Tencent/mars for Flutter. The Dart API is re-exported from
+  mars, and the native APIs share the same library.
 version: 1.0.0-dev.0
 repository: https://github.com/invictus-dart/packages/tree/master/src/mars_flutter
 topics:

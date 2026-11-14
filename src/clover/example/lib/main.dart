@@ -1,0 +1,27 @@
+import 'package:clover/clover.dart';
+import 'package:material_ui/material_ui.dart';
+
+import 'view_models.dart';
+import 'views.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Clover',
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      home: ViewModelBinding(
+        viewBuilder: () => const HomeView(),
+        viewModelBuilder: () => HomeViewModel(),
+      ),
+    );
+  }
+}

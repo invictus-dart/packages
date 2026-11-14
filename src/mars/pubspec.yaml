@@ -1,6 +1,6 @@
 name: mars
 description: >-
-  Dart FFI bindings for Mars, the cross-platform component library developed
+  Tencent/mars for Dart, the cross-platform component library developed
   by WeChat, built from vendored source via native assets build hooks.
 version: 1.0.0-dev.0
 repository: https://github.com/invictus-dart/packages/tree/master/src/mars

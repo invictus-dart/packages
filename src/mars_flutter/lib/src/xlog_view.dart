@@ -11,19 +11,19 @@ Widget _defaultEmptyBuilder(BuildContext context) => Offstage();
 class XlogView extends StatefulWidget {
   final String filePath;
   final String privKey;
-  final TextStyle? style;
   final EdgeInsets? padding;
+  final TextStyle? style;
   final WidgetBuilder loadingBuilder;
-  final WidgetBuilder emtpyBuilder;
+  final WidgetBuilder emptyBuilder;
 
   const XlogView({
     super.key,
     required this.filePath,
     this.privKey = '',
-    this.style,
     this.padding,
+    this.style,
     this.loadingBuilder = _defaultLoadingBuilder,
-    this.emtpyBuilder = _defaultEmptyBuilder,
+    this.emptyBuilder = _defaultEmptyBuilder,
   });
 
   @override
@@ -62,7 +62,7 @@ class _XlogViewState extends State<XlogView> {
         if (isLoading) {
           return widget.loadingBuilder(context);
         } else if (lines == null || lines.isEmpty) {
-          return widget.emtpyBuilder(context);
+          return widget.emptyBuilder(context);
         } else {
           return ListView.builder(
             padding: widget.padding,
@@ -90,9 +90,9 @@ class _XlogViewState extends State<XlogView> {
       final file = File(widget.filePath);
       final input = await file.readAsBytes();
       final output = await xlog.decode(input, privKey: widget.privKey);
-      final stram = Stream<List<int>>.value(output);
+      final stream = Stream<List<int>>.value(output);
       final lineSplitter = LineSplitter();
-      lines.value = await stram
+      lines.value = await stream
           .transform(utf8.decoder)
           .transform(lineSplitter)
           .toList();

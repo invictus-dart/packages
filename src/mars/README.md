@@ -2,7 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/mars.svg)](https://pub.dev/packages/mars)
 
-Dart bindings for [Mars](https://github.com/Tencent/mars), the cross-platform
+[Tencent/mars](https://github.com/Tencent/mars) for Dart, the cross-platform
 component library developed by WeChat (Tencent) — built natively from vendored
 source through [native assets](https://dart.dev/tools/native-assets) build
 hooks, no manual build steps required.
@@ -105,7 +105,7 @@ void main() async {
     mode: AppenderMode.async,     // buffered, recommended
     level: LogLevel.debug,        // global level filter
     logsDir: '/path/to/logs',
-    cacheDir: '/path/to/logs/cache',
+    cacheDir: '/path/to/cache',
     namePrefix: 'log',
     compressMode: CompressMode.zstd,
     // pubKey: '<64 hex chars>',  // ECDH public key to encrypt logs
@@ -118,8 +118,9 @@ void main() async {
   await xlog.flush(); // wait until buffered logs are on disk
   xlog.close();       // merge cached logs into final files
 
-  final bytes = await File('/path/to/log_20260101.xlog').readAsBytes();
-  final plaintext = await xlog.decode(bytes);
+  final input = await file.readAsBytes();
+  final output = await xlog.decode(input); // add privKey: for encrypted segments
+  final text = utf8.decode(output);
 }
 ```
 
