@@ -1,3 +1,16 @@
+## 1.0.0-dev.1
+
+- Linux builds compile again: several vendored headers declare fixed-width
+  integer types without including `<stdint.h>` themselves, which libstdc++
+  does not pull in transitively (Apple libc++ and Android bionic do). The
+  build hook now force-includes `src/comm/projdef.h` on Linux, which follows
+  the upstream layout — a platform dispatcher that includes
+  `src/comm/linux/projdef.h` (`<stdint.h>`), while Windows keeps the vendored
+  `mars/comm/projdef.h`.
+- Requires `native_toolchain_x` `^1.0.0-dev.1`, which no longer reports
+  hook-generated headers as dependencies, so the build hook cache is reused
+  across builds instead of rebuilding OpenSSL and zstd every time.
+
 ## 1.0.0-dev.0
 
 - Initial development prerelease of the Mars Dart bindings.

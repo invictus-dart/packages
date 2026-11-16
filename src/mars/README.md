@@ -10,7 +10,7 @@ hooks, no manual build steps required.
 ## Status: Experimental
 
 **NOTE**: This package is published as a development prerelease
-(`1.0.0-dev.0`) to solicit feedback. The API surface is expected to change —
+(`1.0.0-dev.1`) to solicit feedback. The API surface is expected to change —
 potentially in breaking ways — before the stable `1.0.0` release.
 
 Currently the following Mars module is exposed:

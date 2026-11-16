@@ -1,3 +1,13 @@
+## 1.0.0-dev.1
+
+- `CBuilder` and `CLinker` no longer report files inside the hook output
+  directory (`outputDirectoryShared`, and its checksum subdirectory
+  `outputDirectory`) as dependencies. Builds that install third-party
+  artifacts during the hook (for example the OpenSSL and zstd headers) no
+  longer create a "modified during build" dependency, which used to invalidate
+  the hook cache on every build
+  (`File modified during build. Build must be rerun.`).
+
 ## 1.0.0-dev.0
 
 - Initial development prerelease of `native_toolchain_x`.

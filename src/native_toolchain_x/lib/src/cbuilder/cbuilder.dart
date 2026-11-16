@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:code_assets/code_assets.dart';
+import 'package:collection/collection.dart';
 import 'package:file/file.dart';
 import 'package:file/local.dart';
 import 'package:hooks/hooks.dart';
@@ -260,12 +261,26 @@ class CBuilder extends CTool implements Builder {
         )
         .toList();
 
-    output.dependencies.addAll({
-      // Note: We use a Set here to deduplicate the dependencies.
-      ...sources,
-      ...includeFiles,
-      ...forcedIncludes,
-      ...dartBuildFiles,
-    });
+    output.dependencies.addAll(
+      {
+        // Note: We use a Set here to deduplicate the dependencies.
+        ...sources,
+        ...includeFiles,
+        ...forcedIncludes,
+        ...dartBuildFiles,
+      }.whereNot(
+        // Files in the hook output directory are produced by this hook run
+        // itself (e.g. third-party headers installed by a builder). Checking
+        // only `input.outputDirectoryShared` is enough because
+        // `input.outputDirectory` is a checksum subdirectory of it. Reporting
+        // these files as dependencies makes `native_assets_builder` treat them
+        // as modified during the build and permanently invalidate the hook
+        // cache: "File modified during build. Build must be rerun."
+        (uri) => fileSystem!.path.isWithin(
+          input.outputDirectoryShared.toFilePath(),
+          uri.toFilePath(),
+        ),
+      ),
+    );
   }
 }

@@ -738,12 +738,23 @@ List<String> _getBoostAsmSources(Architecture targetArchitecture) {
   ];
 }
 
-/// Header force-included by upstream MSVC branches (/FI projdef.h).
+/// Headers force-included into every translation unit.
 ///
-/// comm/CMakeLists.txt L72 (`/FI"../projdef.h"`); boot/app/baseevent/sdt/stn/
-/// xlog all use `/FI"../../comm/projdef.h"`.
+/// - Windows: upstream MSVC branches (/FI projdef.h).
+///   comm/CMakeLists.txt L72 (`/FI"../projdef.h"`); boot/app/baseevent/sdt/stn/
+///   xlog all use `/FI"../../comm/projdef.h"`.
+/// - Linux: `src/comm/projdef.h` (local addition, not vendored), a platform
+///   dispatcher that includes `src/comm/linux/projdef.h` with `<stdint.h>`.
+///   Several vendored headers use uint8_t/uint32_t/uint64_t without including
+///   `<stdint.h>` (comm/strutil.h, comm/network/getifaddrs.h, comm/http.h,
+///   ...). libc++/bionic pull those typedefs in transitively through
+///   `<string>`/`<sstream>`; libstdc++ on Linux does not, so those translation
+///   units fail with "unknown type name 'uintX_t'". Windows already gets them
+///   through projdef.h, which includes `<stdint.h>`; Linux gets the equivalent
+///   forced include here instead of editing the vendored headers.
 List<String> _getForcedIncludes(OS targetOS) => [
   if (targetOS == .windows) 'src/mars/comm/projdef.h',
+  if (targetOS == .linux) 'src/comm/projdef.h',
 ];
 
 /// Upstream source: comm/utils.cmake.
