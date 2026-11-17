@@ -3,7 +3,7 @@ description: >-
   A lightweight MVVM framework for Flutter. It provides a ViewModel base
   class and a ViewModelBinding widget that rebuild views when the view
   model notifies changes.
-version: 4.0.2
+version: 4.0.3
 repository: https://github.com/invictus-dart/packages/tree/master/src/clover
 topics:
   - clover
@@ -22,5 +22,5 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  build_runner: ^2.16.2
+  build_runner: ^2.16.1
   mockito: ^5.8.1

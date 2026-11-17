@@ -1,3 +1,10 @@
+## 4.0.3
+
+- Update the example app and its platform scaffolding to the Flutter 3.47.9 templates.
+- Refresh the generated test mocks so the tests resolve `VoidCallback` from
+  `dart:ui` instead of the removed `listen` dependency.
+- Update dev dependencies.
+
 ## 4.0.2
 
 - Migrate the package into the invictus-dart/packages monorepo.
