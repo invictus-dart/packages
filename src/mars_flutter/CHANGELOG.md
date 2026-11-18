@@ -1,3 +1,14 @@
+## 1.0.0-dev.1
+
+- Fixed Android release builds failing in `minifyReleaseWithR8`: JNA references
+  `java.awt.*` classes (through `com.sun.jna.Native$AWT`) that do not exist on
+  Android. The plugin's consumer ProGuard rules now carry `-dontwarn` rules for
+  the four reported `java.awt` classes, so every app consuming the plugin
+  inherits them automatically without touching its own `proguard-rules.pro`.
+- Requires `mars` `^1.0.0-dev.2`, which fixes the Android runtime
+  `UnsatisfiedLinkError` (missing `enter_once_region` / `commit_once_region`)
+  and the armeabi-v7a `libc++_shared.so` bundling failure.
+
 ## 1.0.0-dev.0
 
 - Initial development prerelease of the Mars Flutter plugin.

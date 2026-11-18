@@ -12,7 +12,7 @@
 ## Status: Experimental
 
 **NOTE**: This package is published as a development prerelease
-(`1.0.0-dev.0`) to solicit feedback. The API surface is expected to change —
+(`1.0.0-dev.1`) to solicit feedback. The API surface is expected to change —
 potentially in breaking ways — before the stable `1.0.0` release.
 
 Currently XLog is the only bridged component; bindings for the other Mars
@@ -36,7 +36,7 @@ native assets build hooks; native APIs for these platforms are planned.
 
 ```yaml
 dependencies:
-  mars_flutter: ^1.0.0-dev.0
+  mars_flutter: ^1.0.0-dev.1
 ```
 
 The native Mars library is compiled from source when your app builds, through
