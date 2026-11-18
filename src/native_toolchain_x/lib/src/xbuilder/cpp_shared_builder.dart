@@ -6,7 +6,6 @@ import 'package:logging/logging.dart';
 import 'package:process/process.dart';
 
 import '../cbuilder/compiler_resolver.dart';
-import '../cbuilder/run_cbuilder.dart';
 import 'logger.dart';
 
 class CppSharedBuilder implements Builder {
@@ -36,7 +35,7 @@ class CppSharedBuilder implements Builder {
       fileSystem: fileSystem,
     );
     final compiler = await resolver.resolveCompiler();
-    final target = RunCBuilder.androidNdkClangTargetFlags[targetArchitecture];
+    final target = sysrootTargets[targetArchitecture];
     if (target == null) {
       throw UnsupportedError('Unsupported architecture: $targetArchitecture');
     }
@@ -56,4 +55,17 @@ class CppSharedBuilder implements Builder {
     output.assets.code.add(asset);
     output.dependencies.add(fileUri);
   }
+
+  /// NDK sysroot library directories are named after the *platform* triples,
+  /// which differ from the clang target triples in
+  /// [RunCBuilder.androidNdkClangTargetFlags]: 32-bit ARM compiles with
+  /// "armv7a-linux-androideabi" but its sysroot directory is
+  /// "arm-linux-androideabi". Do not merge with the clang target table.
+  static final sysrootTargets = {
+    Architecture.arm: 'arm-linux-androideabi',
+    Architecture.arm64: 'aarch64-linux-android',
+    Architecture.ia32: 'i686-linux-android',
+    Architecture.x64: 'x86_64-linux-android',
+    Architecture.riscv64: 'riscv64-linux-android',
+  };
 }

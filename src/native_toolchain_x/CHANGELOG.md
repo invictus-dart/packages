@@ -1,3 +1,12 @@
+## 1.0.0-dev.2
+
+- Fixed Android 32-bit ARM (armeabi-v7a) builds: `CppSharedBuilder` derived the
+  `libc++_shared.so` sysroot path from the clang target triple
+  (`armv7a-linux-androideabi`), but the NDK sysroot library directories are
+  named after the platform triples (`arm-linux-androideabi`); the copy failed
+  with a `PathNotFoundException`. The builder now uses a dedicated
+  platform-triple table that intentionally differs from the clang target flags.
+
 ## 1.0.0-dev.1
 
 - `CBuilder` and `CLinker` no longer report files inside the hook output

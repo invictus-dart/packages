@@ -11,7 +11,7 @@ the builders needed to fetch and compile third-party C/C++ sources inside
 ## Status: Experimental
 
 **NOTE**: This package is published as a development prerelease
-(`1.0.0-dev.1`) to solicit feedback. The API surface is expected to change —
+(`1.0.0-dev.2`) to solicit feedback. The API surface is expected to change —
 potentially in breaking ways — before the stable `1.0.0` release.
 
 `native_toolchain_x` starts from `native_toolchain_c` `0.19.5`, and everything
