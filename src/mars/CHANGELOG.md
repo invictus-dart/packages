@@ -1,3 +1,20 @@
+## 1.0.0-dev.2
+
+- Fixed Android release builds crashing at startup: `dlopen` of `libmars.so`
+  failed with an `UnsatisfiedLinkError` because
+  `mars_boost::thread_detail::enter_once_region` /
+  `commit_once_region` were never linked. `coroutine/src/posix/stack_traits.cpp`
+  calls `mars_boost::call_once`, which resolves through
+  `BOOST_THREAD_ONCE_ATOMIC` (`thread/detail/config.hpp`), and those two
+  functions are defined in `boost/libs/thread/src/pthread/once_atomic.cpp` —
+  a file the upstream `boost/CMakeLists.txt` does not compile (its plain
+  archive linking never pulls the referencing object into the final library).
+  The build hook now compiles it on Android, because our whole-archive link
+  semantics require every referenced symbol to resolve.
+- Requires `native_toolchain_x` `^1.0.0-dev.2`, which fixes bundling
+  `libc++_shared.so` for armeabi-v7a (the NDK sysroot path is named after the
+  platform triple `arm-linux-androideabi`, not the clang target triple).
+
 ## 1.0.0-dev.1
 
 - Linux builds compile again: several vendored headers declare fixed-width

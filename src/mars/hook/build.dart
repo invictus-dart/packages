@@ -68,6 +68,16 @@ void main(List<String> arguments) async {
             'src/mars/boost/libs/coroutine/src/exceptions.cpp',
             'src/mars/boost/libs/coroutine/src/detail/coroutine_context.cpp',
             'src/mars/boost/libs/coroutine/src/posix/stack_traits.cpp',
+            // coroutine/src/posix/stack_traits.cpp (compiled above) calls
+            // mars_boost::call_once, which resolves via BOOST_THREAD_ONCE_ATOMIC
+            // (thread/detail/config.hpp); its enter_once_region/
+            // commit_once_region are defined here. The context stack_traits
+            // only uses mars_boost::call_once when BOOST_NO_CXX11_HDR_MUTEX is
+            // set, which it is not. NOTE: upstream boost/CMakeLists.txt does
+            // NOT compile this file; it is added here because our
+            // whole-archive link semantics require all referenced symbols to
+            // resolve or dlopen fails with UnsatisfiedLinkError at runtime.
+            'src/mars/boost/libs/thread/src/pthread/once_atomic.cpp',
             'src/mars/boost/libs/context/src/execution_context.cpp',
             'src/mars/boost/libs/context/src/posix/stack_traits.cpp',
             ..._getBoostAsmSources(targetArchitecture),
