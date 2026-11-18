@@ -2,7 +2,7 @@ name: zstd
 description: >-
   Zstandard (zstd) bindings for Dart: fast lossless compression, compiled from
   the official release sources through native assets build hooks.
-version: 1.0.0-dev.0
+version: 1.0.0-dev.1
 repository: https://github.com/invictus-dart/packages/tree/master/src/zstd
 topics:
   - zstd
@@ -14,7 +14,7 @@ environment:
 dependencies:
   hooks: ^2.0.0
   code_assets: ^2.2.0
-  native_toolchain_x: ^1.0.0-dev.0
+  native_toolchain_x: ^1.0.0-dev.2
   ffi: ^2.1.4
   record_use: ^1.1.0
   meta: ^1.0.0

@@ -1,3 +1,9 @@
+## 1.0.0-dev.5
+
+- Requires `mars` `^1.0.0-dev.2`, which fixes the Android release builds:
+  R8 missing-class failures (`java.awt.*` referenced through JNA) and the
+  runtime `UnsatisfiedLinkError` when `dlopen`-ing `libmars.so`.
+
 ## 1.0.0-dev.4
 
 - Development prerelease of the `package:logging` integration for Mars.

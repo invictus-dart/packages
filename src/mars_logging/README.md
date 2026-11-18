@@ -9,7 +9,7 @@ An integration which records logs from the
 ## Status: Experimental
 
 **NOTE**: This package is published as a development prerelease
-(`1.0.0-dev.4`) to solicit feedback. The API surface is expected to change —
+(`1.0.0-dev.5`) to solicit feedback. The API surface is expected to change —
 potentially in breaking ways — before the stable `1.0.0` release.
 
 ## Usage

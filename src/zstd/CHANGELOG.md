@@ -1,3 +1,11 @@
+## 1.0.0-dev.1
+
+- Requires `native_toolchain_x` `^1.0.0-dev.2`, which fixes bundling
+  `libc++_shared.so` for Android armeabi-v7a (the NDK sysroot path is named
+  after the platform triple `arm-linux-androideabi`, not the clang target
+  triple). zstd itself does not bundle `libc++_shared.so`; the constraint is
+  raised to keep the toolchain versions uniform across the workspace.
+
 ## 1.0.0-dev.0
 
 - Initial development prerelease of the zstd bindings.
