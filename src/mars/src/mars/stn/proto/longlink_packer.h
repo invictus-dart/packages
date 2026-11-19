@@ -110,8 +110,14 @@ class LongLinkEncoder {
                        const AutoBuffer& _extend)>
         longlink_identify_isresp;
     // mars2
-    int packer_encoder_version;
-    void SetEncoderVersion(int _version);
+    // [invictus-dart local fix -- do not sync back to upstream Tencent/mars]
+    // longlink_packer.cc defines packer_encoder_version and SetEncoderVersion
+    // out of class, so they must be static members; otherwise MSVC reports
+    // C2761 (member redeclaration not allowed) and clang rejects the
+    // definition as well. Upstream's own copy in
+    // libraries/mars_android_sdk/jni/longlink_packer.h declares them static.
+    static int packer_encoder_version;
+    static void SetEncoderVersion(int _version);
 };
 
 extern LongLinkEncoder gDefaultLongLinkEncoder;

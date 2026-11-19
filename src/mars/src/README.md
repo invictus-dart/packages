@@ -95,6 +95,7 @@ a future upstream sync can find and re-apply (or drop) each local fix:
 | `comm/verinfo.h` | `MARS_BUILD_TIME` / `MARS_BUILD_TIMESTAMP` snapshot defines commented out; the build hook (`hook/build.dart`, xlog1 `CBuilder`) injects them as `-D` defines so every .xlog header records the actual compilation time |
 | `comm/windows/thread/thread.h` | OpenSSL include `mars/openssl/include/openssl/crypto.h` → `<openssl/crypto.h>` (see "Third-party libraries") |
 | `comm/xlogger/preprocessor.h` | `PP_SIZE` uses the standard implementation under the conforming MSVC preprocessor |
+| `stn/proto/longlink_packer.h` | `packer_encoder_version` / `SetEncoderVersion` corrected to `static`: `longlink_packer.cc` defines them out of class, which MSVC rejects with C2761; matches `libraries/mars_android_sdk/jni/longlink_packer.h` |
 | `stn/src/special_ini.h` | OpenSSL include `mars/openssl/include/openssl/md5.h` → `<openssl/md5.h>` (see "Third-party libraries") |
 | `xlog/crypt/decode_log_file_c_impl/decode_log_file.c` | zstd include `zstd/lib/zstd.h` → `<zstd.h>` (see "Third-party libraries") |
 | `xlog/src/log_zstd_buffer.h` | zstd include `zstd/lib/zstd.h` → `<zstd.h>` (see "Third-party libraries") |
