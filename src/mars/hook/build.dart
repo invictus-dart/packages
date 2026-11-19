@@ -609,6 +609,16 @@ void main(List<String> arguments) async {
             'src/mars/stn/jni/com_tencent_mars_stn_StnLogic_Java2C.cc',
             'src/mars/stn/jni/stn_manager_callback_wrapper.cc',
             'src/mars/stn/jni/stn_manager_wrapper.cc',
+          ] else ...[
+            // stn/proto/*_packer.cc define gDefaultLongLinkEncoder,
+            // shortlink_pack, shortlink_tracker::Create and
+            // longlink_tracker::Create. Neither this hook nor the upstream
+            // stn CMakeLists compiles them; Android gets the definitions from
+            // libraries/mars_android_sdk/jni instead. Without them the other
+            // platforms link with undefined data symbols, which fails outright
+            // on Windows (LNK2001) and only surfaces at load time elsewhere.
+            'src/mars/stn/proto/longlink_packer.cc',
+            'src/mars/stn/proto/shortlink_packer.cc',
           ],
         ],
         includes: [
@@ -847,6 +857,14 @@ List<String> _getUtilsCFlags(OS targetOS, {BuildMode buildMode = .release}) =>
 ///   -ffunction-sections / -fdata-sections / -Os, plus the Android -Werror
 ///   warning set (CMakeExtraFlags.txt L3-12), not enabled by these hooks.
 ///   Kept as-is.
+///
+/// Two vendored-code diagnostics are silenced rather than kept as warnings:
+/// `-Wdeprecated-builtins` (boost's `__has_trivial_*` / `__has_nothrow_*`,
+/// deprecated in clang 16) and `-Wdeprecated-declarations`
+/// (`std::unary_function` / `std::binary_function`, plus the OpenSSL 3 `MD5`
+/// call that the mars protocol still depends on). Neither is a defect, and
+/// together they account for every warning of a full build. Every other
+/// diagnostic still goes through the `-Werror` gate.
 List<String> _getExtraFlags(OS targetOS) => switch (targetOS) {
   .android => [
     // comm/CMakeExtraFlags.txt L3-9 (Clang branch; the NDK compiler is
@@ -860,17 +878,15 @@ List<String> _getExtraFlags(OS targetOS) => switch (targetOS) {
     '-Wno-error=unused-variable',
     '-Wno-error=missing-braces',
     '-Wno-error=tautological-type-limit-compare',
-    // NDK r28 clang deprecates the type-trait builtins used by the vendored
-    // boost (e.g. __has_trivial_destructor -> __is_trivially_destructible),
-    // and mars::comm uses std::binary_function (deprecated since C++11).
-    // Keep these as warnings instead of failing the upstream -Werror gate.
-    '-Wno-error=deprecated-builtins',
-    '-Wno-error=deprecated-declarations',
+    '-Wno-deprecated-builtins',
+    '-Wno-deprecated-declarations',
   ],
   .iOS || .macOS => [
     // The Apple branch of CMakeExtraFlags.txt has only commented-out
     // -Werror -Wall (not effective).
     // '-Werror', '-Wall',
+    '-Wno-deprecated-builtins',
+    '-Wno-deprecated-declarations',
   ],
   .windows => [
     '/wd4003',
@@ -883,7 +899,7 @@ List<String> _getExtraFlags(OS targetOS) => switch (targetOS) {
     '/wd4005',
     '/wd4334',
   ],
-  .linux => [],
+  .linux => ['-Wno-deprecated-builtins', '-Wno-deprecated-declarations'],
   _ => throw UnsupportedError('Unsupported os: $targetOS'),
 };
 
