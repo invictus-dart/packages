@@ -66,6 +66,12 @@ final class CMakeBuilder implements Builder {
       arguments: [
         '-S${subDir == null ? srcDir.toFilePath() : srcDir.resolve(subDir).toFilePath()}',
         '-B${dstDir.toFilePath()}',
+        // On Windows the default Visual Studio generator asks MSBuild for
+        // VCTargetsPath, which fails when cross-compiling for Android
+        // (CMAKE_SYSTEM_NAME=Android). Ninja is single-config and needs no MSVC
+        // environment for NDK builds, so Android targets switch to it there.
+        if (input.config.code.targetOS == .android && OS.current == .windows)
+          '-GNinja',
         '-DCMAKE_BUILD_TYPE=$buildMode',
         '-DCMAKE_INSTALL_PREFIX=${outDir.toFilePath()}',
         '-DCMAKE_INSTALL_LIBDIR=lib',
