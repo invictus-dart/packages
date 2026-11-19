@@ -857,14 +857,6 @@ List<String> _getUtilsCFlags(OS targetOS, {BuildMode buildMode = .release}) =>
 ///   -ffunction-sections / -fdata-sections / -Os, plus the Android -Werror
 ///   warning set (CMakeExtraFlags.txt L3-12), not enabled by these hooks.
 ///   Kept as-is.
-///
-/// Two vendored-code diagnostics are silenced rather than kept as warnings:
-/// `-Wdeprecated-builtins` (boost's `__has_trivial_*` / `__has_nothrow_*`,
-/// deprecated in clang 16) and `-Wdeprecated-declarations`
-/// (`std::unary_function` / `std::binary_function`, plus the OpenSSL 3 `MD5`
-/// call that the mars protocol still depends on). Neither is a defect, and
-/// together they account for every warning of a full build. Every other
-/// diagnostic still goes through the `-Werror` gate.
 List<String> _getExtraFlags(OS targetOS) => switch (targetOS) {
   .android => [
     // comm/CMakeExtraFlags.txt L3-9 (Clang branch; the NDK compiler is
@@ -878,15 +870,17 @@ List<String> _getExtraFlags(OS targetOS) => switch (targetOS) {
     '-Wno-error=unused-variable',
     '-Wno-error=missing-braces',
     '-Wno-error=tautological-type-limit-compare',
-    '-Wno-deprecated-builtins',
-    '-Wno-deprecated-declarations',
+    // NDK r28 clang deprecates the type-trait builtins used by the vendored
+    // boost (e.g. __has_trivial_destructor -> __is_trivially_destructible),
+    // and mars::comm uses std::binary_function (deprecated since C++11).
+    // Keep these as warnings instead of failing the upstream -Werror gate.
+    '-Wno-error=deprecated-builtins',
+    '-Wno-error=deprecated-declarations',
   ],
   .iOS || .macOS => [
     // The Apple branch of CMakeExtraFlags.txt has only commented-out
     // -Werror -Wall (not effective).
     // '-Werror', '-Wall',
-    '-Wno-deprecated-builtins',
-    '-Wno-deprecated-declarations',
   ],
   .windows => [
     '/wd4003',
@@ -899,7 +893,7 @@ List<String> _getExtraFlags(OS targetOS) => switch (targetOS) {
     '/wd4005',
     '/wd4334',
   ],
-  .linux => ['-Wno-deprecated-builtins', '-Wno-deprecated-declarations'],
+  .linux => [],
   _ => throw UnsupportedError('Unsupported os: $targetOS'),
 };
 
