@@ -2,7 +2,7 @@ name: mars
 description: >-
   Tencent/mars for Dart, the cross-platform component library developed
   by WeChat, built from vendored source via native assets build hooks.
-version: 1.0.0-dev.2
+version: 1.0.0-dev.3
 repository: https://github.com/invictus-dart/packages/tree/master/src/mars
 topics:
   - mars
@@ -14,7 +14,7 @@ environment:
 dependencies:
   hooks: ^2.0.0
   code_assets: ^2.2.0
-  native_toolchain_x: ^1.0.0-dev.2
+  native_toolchain_x: ^1.0.0-dev.3
   logging: ^1.3.0
   file: ^7.0.1
   process: ^5.0.5

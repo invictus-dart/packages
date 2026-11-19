@@ -1,3 +1,19 @@
+## 1.0.0-dev.3
+
+- OpenSSL is no longer compiled in the build hook. The hook downloads the
+  prebuilt install tree for the target — headers plus the static
+  `libcrypto`/`libssl` — from the `invictus-dart/openssl` release `v3.5.9`.
+  This removes the Perl, NASM, `jom` and `make` requirements of the in-tree
+  build, and Windows no longer depends on a Perl that produces Unix paths.
+- The download is driven by the `openssl` user define: the defaults live in
+  `lib/src/hook/openssl.download.dart`, one entry per platform and
+  architecture, and `hooks.user_defines.mars.openssl` replaces them wholesale
+  (this repository uses it to route downloads through `gh-proxy.org`).
+- `hook/build.dart` adds `openssl/out/lib` to the library directories so the
+  dynamic link path (`CBuilder` producing `libmars.dylib`) can resolve
+  `-lcrypto`/`-lssl`.
+- Requires `native_toolchain_x` `^1.0.0-dev.3` (`DownloadBuilder`).
+
 ## 1.0.0-dev.2
 
 - Fixed Android release builds crashing at startup: `dlopen` of `libmars.so`

@@ -8,6 +8,7 @@ void main(List<String> arguments) async {
   await link(arguments, (input, output) async {
     if (!input.config.buildCodeAssets) return;
 
+    final targetOS = input.config.code.targetOS;
     final treeShake = input.userDefines.getValue('tree_shake', true);
 
     final linker = CLinker.library(
@@ -20,7 +21,7 @@ void main(List<String> arguments) async {
           )
           .toList(),
       frameworks: frameworks,
-      libraries: getSystemLibraries(input.config.code.targetOS),
+      libraries: getSystemLibraries(targetOS),
     );
     await linker.run(
       input: input,

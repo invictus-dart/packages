@@ -32,15 +32,10 @@ before their stable `1.0.0` releases.
 - A C/C++ toolchain for each target platform:
   - Android: the Android NDK.
   - iOS / macOS: Xcode.
-  - Windows: Visual Studio with the "Desktop development with C++" workload,
-    plus Qt's `jom`.
+  - Windows: Visual Studio with the "Desktop development with C++" workload.
   - Linux: `gcc`/`clang` and GNU `make`.
-- The extra build tools each package needs — `cmake`, `tar`, `perl`, `nasm`
-  and Qt's `jom` — are listed in the package READMEs, together with the
-  platform-specific details.
-- Windows builds require `jom` on `PATH`. Visual Studio's `nmake` is not a
-  substitute: it has no parallel mode, and compiling OpenSSL serially under
-  `nmake` takes an order of magnitude longer than under `jom` or `make -j`.
+- The extra build tools each package needs — `cmake`, `tar` and `make` — are
+  listed in the package READMEs, together with the platform-specific details.
 
 ## Development
 

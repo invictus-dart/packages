@@ -31,6 +31,9 @@ final class OpensslBuilder implements Builder {
 
     if (!input.config.buildCodeAssets) return;
 
+    final targetOS = input.config.code.targetOS;
+    final targetSdk = targetOS == .iOS ? input.config.code.iOS.targetSdk : null;
+    final targetArchitecture = input.config.code.targetArchitecture;
     final userDefines = input.userDefines.getValue('openssl', _userDefines);
     final url = userDefines['url'] as String;
     final sha256 = userDefines['sha256'] as String;
@@ -47,10 +50,6 @@ final class OpensslBuilder implements Builder {
     final outDir = input.outputDirectory.resolve('openssl/out/');
     await fileSystem.directory(dstDir).create(recursive: true);
     await fileSystem.directory(outDir).create(recursive: true);
-
-    final targetOS = input.config.code.targetOS;
-    final targetSdk = targetOS == .iOS ? input.config.code.iOS.targetSdk : null;
-    final targetArchitecture = input.config.code.targetArchitecture;
 
     final context = ToolResolvingContext(
       logger: logger,
@@ -98,7 +97,7 @@ final class OpensslBuilder implements Builder {
     };
 
     // 1. Get openssl repository
-    final repositoryPart = RepositoryBuilder.tgz(url: url, sha256: sha256);
+    final repositoryPart = DownloadBuilder.tgz(url: url, sha256: sha256);
     await repositoryPart.run(input: input, output: output);
     // 2. Configure with Perl
     final perl = await Tools.perl.resolve(context);
@@ -135,19 +134,19 @@ final class OpensslBuilder implements Builder {
           'Unsupported architecture: $targetArchitecture',
         ),
       },
+      .windows => switch (targetArchitecture) {
+        .arm64 => 'VC-WIN64-ARM',
+        .ia32 => 'VC-WIN32',
+        .x64 => 'VC-WIN64A',
+        _ => throw UnsupportedError(
+          'Unsupported architecture: $targetArchitecture',
+        ),
+      },
       .linux => switch (targetArchitecture) {
         .arm => 'linux-armv4',
         .arm64 => 'linux-aarch64',
         .ia32 => 'linux-x86',
         .x64 => 'linux-x86_64',
-        _ => throw UnsupportedError(
-          'Unsupported architecture: $targetArchitecture',
-        ),
-      },
-      .windows => switch (targetArchitecture) {
-        .arm64 => 'VC-WIN64-ARM',
-        .ia32 => 'VC-WIN32',
-        .x64 => 'VC-WIN64A',
         _ => throw UnsupportedError(
           'Unsupported architecture: $targetArchitecture',
         ),
@@ -247,7 +246,7 @@ final class OpensslBuilder implements Builder {
             name: library,
             linkMode: linkMode,
             file: outDir.resolve(
-              'lib/${input.config.code.targetOS.libraryFileName(library, linkMode)}',
+              'lib/${targetOS.libraryFileName(library, linkMode)}',
             ),
           ),
         ),

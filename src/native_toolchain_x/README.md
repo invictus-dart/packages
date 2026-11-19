@@ -11,7 +11,7 @@ the builders needed to fetch and compile third-party C/C++ sources inside
 ## Status: Experimental
 
 **NOTE**: This package is published as a development prerelease
-(`1.0.0-dev.2`) to solicit feedback. The API surface is expected to change —
+(`1.0.0-dev.3`) to solicit feedback. The API surface is expected to change —
 potentially in breaking ways — before the stable `1.0.0` release.
 
 `native_toolchain_x` starts from `native_toolchain_c` `0.19.5`, and everything
@@ -21,9 +21,9 @@ can switch imports without other changes. On top of that it adds:
 - **`CMakeBuilder`** — configure, build, and install an existing CMake project
   for the target OS, architecture, SDK version, and NDK API level of the
   current build.
-- **`RepositoryBuilder`** — fetch third-party sources into the shared build
-  directory, either as a release `.tar.gz` verified against a SHA-256 digest or
-  as a Git checkout at a refspec.
+- **`DownloadBuilder`** — download a release `.tar.gz` into the shared build
+  directory, verifying the SHA-256 digest before extracting it.
+- **`RepositoryBuilder`** — check out third-party sources at a Git refspec.
 - **`Tools`** — resolve external build tools (`cmake`, `make`, `jom`, `tar`,
   `git`, `perl`, `nasm`) through the same resolver machinery used for compilers,
   with `resolveOrNull` for callers that want to handle a missing tool
@@ -65,10 +65,12 @@ The builders need the following tools available:
 | Tool | Required by |
 | --- | --- |
 | `cmake` | `CMakeBuilder` |
-| `tar` | `RepositoryBuilder.tgz` |
+| `tar` | `DownloadBuilder.tgz` |
 | `git` | `RepositoryBuilder.git` |
-| `make`, `nasm`, `perl` | Third-party CMake projects that need them |
-| `jom` | Parallel `nmake`-style builds of OpenSSL on Windows (the `mars` hook) |
+| `make` | CMake projects whose generator needs it |
+
+`Tools` also exposes `perl`, `nasm` and `jom` for hooks that compile projects
+requiring them; no built-in builder does.
 
 ## Usage
 
@@ -110,7 +112,7 @@ void main(List<String> args) async {
   await build(args, (input, output) async {
     if (!input.config.buildCodeAssets) return;
 
-    await RepositoryBuilder.tgz(url: _url, sha256: _sha256)
+    await DownloadBuilder.tgz(url: _url, sha256: _sha256)
         .run(input: input, output: output);
 
     await CMakeBuilder(

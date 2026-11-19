@@ -28,7 +28,7 @@ void main(List<String> args) async {
     final outDir = input.outputDirectory.resolve('out/');
 
     // 1. Get repository
-    final repositoryPart = RepositoryBuilder.tgz(url: url, sha256: sha256);
+    final repositoryPart = DownloadBuilder.tgz(url: url, sha256: sha256);
     await repositoryPart.run(input: input, output: output);
     final builder = CMakeBuilder(
       srcDir: srcDir,

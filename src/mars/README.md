@@ -10,7 +10,7 @@ hooks, no manual build steps required.
 ## Status: Experimental
 
 **NOTE**: This package is published as a development prerelease
-(`1.0.0-dev.2`) to solicit feedback. The API surface is expected to change —
+(`1.0.0-dev.3`) to solicit feedback. The API surface is expected to change —
 potentially in breaking ways — before the stable `1.0.0` release.
 
 Currently the following Mars module is exposed:
@@ -44,51 +44,42 @@ the library, but not yet bridged to Dart.
   - Windows: Visual Studio with the C++ workload.
   - Linux: the system compiler (`gcc`/`clang`) and `make`.
 
-The build hooks download and compile OpenSSL (latest LTS) and zstd from
-official release tarballs, then compile the vendored Mars sources and link
-everything into a single dynamic library (`libmars.so` / `libmars.dylib` /
-`mars.dll`) for each target. Nothing needs to be configured.
+The build hooks download a prebuilt OpenSSL install tree and the zstd release
+tarball, compile zstd and the vendored Mars sources, then link everything into
+a single dynamic library (`libmars.so` / `libmars.dylib` / `mars.dll`) for each
+target. Nothing needs to be configured.
 
-### Building OpenSSL
+### Third-party libraries
 
-OpenSSL is built from source first, so its build environment has to be
-available on top of the C/C++ toolchain above:
+OpenSSL is consumed as a prebuilt install tree — headers plus the static
+`libcrypto`/`libssl` — published in the `invictus-dart/openssl` repository, one
+archive per target (`android-arm64`, `darwin64-arm64`, `VC-WIN64A`, and so on).
+Every archive is pinned by URL and SHA-256 in
+`lib/src/hook/openssl.download.dart`: no Perl, NASM or `jom` is involved, and the
+headers always belong to the same build as the libraries. zstd is still compiled
+from the official release tarball with CMake.
 
-| Tool | Platform | Purpose |
-| --- | --- | --- |
-| Perl | all | runs `perl Configure` (Strawberry Perl on Windows, the system Perl elsewhere) |
-| NASM | Windows | OpenSSL's x86/x86_64 assembly routines; install it if Configure reports NASM missing |
-| Jom | Windows | builds and installs OpenSSL in parallel (`/J <cores>`); the build fails if it is not on `PATH` |
-| Make | Linux, macOS, Android targets | builds and installs OpenSSL (`-j<cores>`) |
-| Tar | all | `tar` extracts both release archives |
-| CMake | all | `cmake` builds zstd |
+Downloads can be routed through a mirror with the `openssl` user define. The
+value replaces the defaults wholesale, so it must carry every entry the build
+uses, for example:
 
-The tools must be on `PATH`. On Windows the MSVC environment is resolved
-through `vswhere`, so no Developer Command Prompt is required.
+```yaml
+hooks:
+  user_defines:
+    mars:
+      openssl:
+        android:
+          arm64:
+            url: https://gh-proxy.org/https://github.com/invictus-dart/openssl/releases/download/v3.5.9/openssl-3.5.9-android-arm64.tar.gz
+            sha256: f07d46e5fbbb677922329e5ec2ad08eb7cc7271c886835b0acf3225e7fb6fdda
+```
 
-### Why `jom` and not `nmake`
+Tools required on `PATH`:
 
-Visual Studio's `nmake` has no parallel mode — `/J` and `-j` are absent from its
-option list — so it compiles OpenSSL's ~1,100 translation units one after
-another, which is what makes the Windows build take an order of magnitude
-longer than the macOS/Linux ones for identical sources. `jom`
-(<https://download.qt.io/official_releases/jom/jom.zip>, also bundled with Qt
-Creator) is an nmake-compatible make that adds `/J <n>`, and passes the job
-count down to the recursive `$(MAKE)` calls OpenSSL's makefile issues.
-
-While compiling with `jom`, the hook exports `CL=/FS` to the build process:
-OpenSSL's generated makefile passes `/Zi /Fdossl_static.pdb` to every `cl`
-invocation without `/FS`, and concurrent compiles would otherwise abort with
-`C1041: cannot open program database`. `/FS` routes PDB writes through
-`mspdbsrv` without patching the makefile or the vendored sources.
-
-OpenSSL is built with `jom /J <cores> build_libs` and then installed with
-`jom /J 1 install`. The install rules are not independent: `install_dev` and
-`install_runtime` both pull in `build_programs`/`build_libs`, whose recipes run
-the makefile's `depend` target, and `depend` rewrites `makefile` by renaming
-`makefile-<pid>` over it (`util/add-depends.pl`). Two concurrent instances
-therefore fail with `Permission denied` while the other one holds the makefile
-open, so the install is the one step that must stay serial.
+| Tool | Purpose |
+| --- | --- |
+| `tar` | extracts the OpenSSL and zstd archives |
+| `cmake` | configures, builds and installs zstd |
 
 ## Usage
 

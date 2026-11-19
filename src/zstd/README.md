@@ -11,7 +11,7 @@ has to be installed or built by hand besides a C toolchain.
 ## Status: Experimental
 
 **NOTE**: This package is published as a development prerelease
-(`1.0.0-dev.1`) to solicit feedback. The API surface is expected to change —
+(`1.0.0-dev.2`) to solicit feedback. The API surface is expected to change —
 potentially in breaking ways — before the stable `1.0.0` release.
 
 ## Features
@@ -90,7 +90,7 @@ linking, a shared library is built and bundled instead
 
 `hook/build.dart` fetches and compiles zstd, `hook/link.dart` links it:
 
-1. `RepositoryBuilder.tgz` downloads the release archive into the shared build
+1. `DownloadBuilder.tgz` downloads the release archive into the shared build
    directory and verifies the SHA-256 digest before extracting it.
 2. `CMakeBuilder` configures `build/cmake/` with `ZSTD_BUILD_PROGRAMS=OFF` and
    builds static or shared according to the link mode, then installs it into

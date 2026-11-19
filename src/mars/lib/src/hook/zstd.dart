@@ -29,6 +29,7 @@ final class ZstdBuilder implements Builder {
 
     if (!input.config.buildCodeAssets) return;
 
+    final targetOS = input.config.code.targetOS;
     final userDefines = input.userDefines.getValue('zstd', _userDefines);
     final url = userDefines['url'] as String;
     final sha256 = userDefines['sha256'] as String;
@@ -46,10 +47,8 @@ final class ZstdBuilder implements Builder {
     await fileSystem.directory(dstDir).create(recursive: true);
     await fileSystem.directory(outDir).create(recursive: true);
 
-    final targetOS = input.config.code.targetOS;
-
     // 1. Get zstd repository
-    final repositoryPart = RepositoryBuilder.tgz(url: url, sha256: sha256);
+    final repositoryPart = DownloadBuilder.tgz(url: url, sha256: sha256);
     await repositoryPart.run(input: input, output: output);
     // 2. Compile static library with CMake
     final builder = CMakeBuilder(
@@ -67,7 +66,7 @@ final class ZstdBuilder implements Builder {
     );
     await builder.run(input: input, output: output);
     // 3. Add code asset when link is enabled
-    final libraries = getZstdLibraries(input.config.code.targetOS);
+    final libraries = getZstdLibraries(targetOS);
     if (input.config.linkingEnabled) {
       final linkMode = StaticLinking();
       output.assets.code.addAll(
@@ -77,7 +76,7 @@ final class ZstdBuilder implements Builder {
             name: library,
             linkMode: linkMode,
             file: outDir.resolve(
-              'lib/${input.config.code.targetOS.libraryFileName(library, linkMode)}',
+              'lib/${targetOS.libraryFileName(library, linkMode)}',
             ),
           ),
         ),

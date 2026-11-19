@@ -1,3 +1,12 @@
+## 1.0.0-dev.3
+
+- `RepositoryBuilder.tgz` is now `DownloadBuilder.tgz` (breaking change for
+  callers): it downloads a release archive, verifies the SHA-256 digest and
+  extracts it into the shared build directory. `RepositoryBuilder` keeps only
+  `.git`. The archive is written as `<name>.tmp` and renamed to `<name>` after
+  a successful extraction, so an archive present in the build directory is
+  always a complete one and is reused instead of downloaded again.
+
 ## 1.0.0-dev.2
 
 - Fixed Android 32-bit ARM (armeabi-v7a) builds: `CppSharedBuilder` derived the

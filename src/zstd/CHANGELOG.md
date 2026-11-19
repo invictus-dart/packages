@@ -1,3 +1,9 @@
+## 1.0.0-dev.2
+
+- Requires `native_toolchain_x` `^1.0.0-dev.3`: the archive download moved from
+  `RepositoryBuilder.tgz` to `DownloadBuilder.tgz`. No API or behavior change
+  in zstd itself.
+
 ## 1.0.0-dev.1
 
 - Requires `native_toolchain_x` `^1.0.0-dev.2`, which fixes bundling
