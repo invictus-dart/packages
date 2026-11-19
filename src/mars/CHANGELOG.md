@@ -13,6 +13,18 @@
   dynamic link path (`CBuilder` producing `libmars.dylib`) can resolve
   `-lcrypto`/`-lssl`.
 - Requires `native_toolchain_x` `^1.0.0-dev.3` (`DownloadBuilder`).
+- Android is no longer the only target that provides the long/short link
+  packer implementations: `hook/build.dart` now also compiles
+  `stn/proto/longlink_packer.cc` and `stn/proto/shortlink_packer.cc`. Windows
+  release builds failed with `LNK2001` for `gDefaultLongLinkEncoder`,
+  `shortlink_pack`, `shortlink_tracker::Create` and
+  `longlink_tracker::Create`; iOS, macOS and Linux linked with undefined data
+  symbols and only failed at load time.
+- Fixed the MSVC `C2761` error in `stn/proto/longlink_packer.h`:
+  `packer_encoder_version` and `SetEncoderVersion` are declared `static`,
+  matching the shipped `libraries/mars_android_sdk/jni` copy, because
+  `longlink_packer.cc` defines the data member out of class. The defect only
+  surfaced once the packer sources above became part of the build.
 
 ## 1.0.0-dev.2
 

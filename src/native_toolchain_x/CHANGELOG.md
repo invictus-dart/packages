@@ -6,6 +6,12 @@
   `.git`. The archive is written as `<name>.tmp` and renamed to `<name>` after
   a successful extraction, so an archive present in the build directory is
   always a complete one and is reused instead of downloaded again.
+- `CMakeBuilder` passes `-GNinja` when cross-compiling for Android from a
+  Windows host. The default Visual Studio generator asks MSBuild for
+  `VCTargetsPath`, which fails with `CMAKE_SYSTEM_NAME=Android`; Ninja is
+  single-config and needs no MSVC environment for NDK builds. Every other
+  target keeps the default generator, because the Windows target relies on
+  the Visual Studio generator to set up MSVC itself.
 
 ## 1.0.0-dev.2
 
